@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+	<!-- Debug-only: allows plaintext HTTP to the Android emulator's host alias,
+	     where `wrangler dev` runs during local development. Not referenced in Release
+	     (see AndroidManifest.xml networkSecurityConfig attribute, Debug-conditioned). -->
+	<domain-config cleartextTrafficPermitted="true">
+		<domain includeSubdomains="false">10.0.2.2</domain>
+	</domain-config>
+</network-security-config>

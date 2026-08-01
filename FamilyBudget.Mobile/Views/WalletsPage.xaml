@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             xmlns:dtos="clr-namespace:FamilyBudget.Mobile.Services.Api.Dtos"
+             xmlns:controls="clr-namespace:FamilyBudget.Mobile.Controls"
+             x:DataType="vm:WalletsViewModel"
+             x:Class="FamilyBudget.Mobile.Views.WalletsPage"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource Surface}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- App bar -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Padding="20,18" ColumnSpacing="12">
+            <Label Grid.Column="0" Text="Wallets" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+            <Border Grid.Column="1"
+                    WidthRequest="42" HeightRequest="42"
+                    StrokeShape="RoundRectangle 21"
+                    Stroke="Transparent"
+                    BackgroundColor="{StaticResource PrimaryContainer}">
+                <Label Text="&#128104;&#8205;&#128105;&#8205;&#128103;" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="16,4,16,20" Spacing="0">
+
+                        <!-- Balance card -->
+                        <Border StrokeShape="RoundRectangle 28"
+                                Stroke="Transparent"
+                                BackgroundColor="{StaticResource PrimaryContainer}"
+                                Padding="22"
+                                Margin="0,0,0,22">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Total family balance" FontSize="14" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.8" />
+                                <Label Text="{Binding TotalBalance, Converter={StaticResource MoneyConverter}}"
+                                       FontSize="31" FontAttributes="Bold" TextColor="{StaticResource OnPrimaryContainer}" />
+                                <HorizontalStackLayout Spacing="7" Margin="0,7,0,0">
+                                    <Border WidthRequest="8" HeightRequest="8" StrokeShape="RoundRectangle 4" Stroke="Transparent"
+                                            BackgroundColor="{Binding CurrentPeriod.Status, Converter={StaticResource PeriodStatusColorConverter}}"
+                                            VerticalOptions="Center" />
+                                    <Label Text="{Binding PeriodStatusText}" FontSize="13" TextColor="{StaticResource OnPrimaryContainer}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Label Text="Current period" FontSize="20" Margin="4,0,0,13" TextColor="{StaticResource OnSurface}" />
+
+                        <Border StrokeShape="RoundRectangle 20"
+                                Stroke="Transparent"
+                                BackgroundColor="{StaticResource SurfaceContainer}"
+                                Padding="16"
+                                Margin="0,0,0,24">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                <Border Grid.Column="0"
+                                        WidthRequest="44" HeightRequest="44"
+                                        StrokeShape="RoundRectangle 14"
+                                        Stroke="Transparent"
+                                        BackgroundColor="{StaticResource SecondaryContainer}">
+                                    <Label Text="&#128197;" FontSize="19" HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                                    <Label Text="Period" FontSize="14" TextColor="{StaticResource OnSurfaceVariant}" />
+                                    <Label Text="{Binding CurrentPeriod.Name, TargetNullValue='Current period (no name)'}"
+                                           FontSize="15" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
+                                    <Label Text="{Binding CurrentPeriod.StartDate, StringFormat='Started {0:d MMM yyyy}'}"
+                                           FontSize="12" TextColor="{StaticResource OnSurfaceVariant}"
+                                           IsVisible="{Binding HasOpenPeriod}" />
+                                    <Label Text="Go to More &gt; Periods to start one"
+                                           FontSize="12" TextColor="{StaticResource OnSurfaceVariant}"
+                                           IsVisible="{Binding HasOpenPeriod, Converter={StaticResource InverseBoolConverter}}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="2" Text="&#8250;" FontSize="23" TextColor="{StaticResource OnSurfaceVariant}" VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,Auto" Margin="4,0,0,13">
+                            <Label Grid.Column="0" Text="Wallets" FontSize="20" TextColor="{StaticResource OnSurface}" />
+                            <Label Grid.Column="1" Text="Manage" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                        </Grid>
+
+                        <CollectionView ItemsSource="{Binding Wallets}">
+                            <CollectionView.EmptyView>
+                                <Label Text="No wallets yet." HorizontalOptions="Center" Margin="0,20" TextColor="{StaticResource OnSurfaceVariant}" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="dtos:WalletDto">
+                                    <Border StrokeShape="RoundRectangle 20"
+                                            Stroke="Transparent"
+                                            BackgroundColor="{StaticResource SurfaceContainer}"
+                                            Padding="16"
+                                            Margin="0,0,0,12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                                            <Border Grid.Column="0"
+                                                    WidthRequest="50" HeightRequest="50"
+                                                    StrokeShape="RoundRectangle 16"
+                                                    Stroke="Transparent"
+                                                    BackgroundColor="{StaticResource Surface}">
+                                                <Label Text="&#128091;" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                                            </Border>
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
+                                                <Label Text="{Binding Name}" FontSize="14" TextColor="{StaticResource OnSurfaceVariant}" />
+                                                <Label Text="{Binding Balance, Converter={StaticResource MoneyConverter}}"
+                                                       FontSize="18" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
+                                            </VerticalStackLayout>
+                                            <Label Grid.Column="2" Text="&#8942;" FontSize="21" TextColor="{StaticResource OnSurfaceVariant}" VerticalOptions="Center" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+
+            <!-- FAB -->
+            <Border WidthRequest="58" HeightRequest="58"
+                    StrokeShape="RoundRectangle 18"
+                    Stroke="Transparent"
+                    BackgroundColor="{StaticResource PrimaryContainer}"
+                    HorizontalOptions="End" VerticalOptions="End"
+                    Margin="0,0,20,20">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAddWalletTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="+" FontSize="29" TextColor="{StaticResource OnPrimaryContainer}" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+
+        </Grid>
+
+        <controls:BottomNavBar Grid.Row="2" ActiveTab="wallets" />
+
+    </Grid>
+
+</ContentPage>

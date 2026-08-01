@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             x:DataType="vm:TransactionFormViewModel"
+             x:Class="FamilyBudget.Mobile.Views.TransactionFormPage"
+             Title="Add transaction"
+             BackgroundColor="{StaticResource Surface}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <Border StrokeShape="RoundRectangle 14"
+                    Stroke="Transparent"
+                    BackgroundColor="{StaticResource Error}"
+                    Padding="14"
+                    IsVisible="{Binding HasOpenPeriod, Converter={StaticResource InverseBoolConverter}}">
+                <Label Text="No open period. Go to More &gt; Periods to start one before recording transactions."
+                       TextColor="{StaticResource OnPrimary}" />
+            </Border>
+
+            <!-- Type selector -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Button Grid.Column="0" Text="Income"
+                        Command="{Binding SetTypeCommand}" CommandParameter="income"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="income">
+                            <Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" />
+                            <Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button Grid.Column="1" Text="Expense"
+                        Command="{Binding SetTypeCommand}" CommandParameter="expense"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="expense">
+                            <Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" />
+                            <Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button Grid.Column="2" Text="Transfer"
+                        Command="{Binding SetTypeCommand}" CommandParameter="transfer"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="transfer">
+                            <Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" />
+                            <Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </Grid>
+
+            <!-- Income: to wallet -->
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding SelectedType, Converter={StaticResource StringEqualsConverter}, ConverterParameter=income}">
+                <Label Text="To wallet" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding Wallets}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding ToWallet}" />
+            </VerticalStackLayout>
+
+            <!-- Expense: from wallet + category -->
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding SelectedType, Converter={StaticResource StringEqualsConverter}, ConverterParameter=expense}">
+                <Label Text="From wallet" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding Wallets}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding FromWallet}" />
+                <Label Text="Category" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" Margin="0,8,0,0" />
+                <Picker ItemsSource="{Binding CategoryOptions}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedCategoryOption}" />
+            </VerticalStackLayout>
+
+            <!-- Transfer: from + to wallet -->
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding SelectedType, Converter={StaticResource StringEqualsConverter}, ConverterParameter=transfer}">
+                <Label Text="From wallet" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding Wallets}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding FromWallet}" />
+                <Label Text="To wallet" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" Margin="0,8,0,0" />
+                <Picker ItemsSource="{Binding Wallets}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding ToWallet}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Amount (Rp)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Entry Text="{Binding AmountText}" Keyboard="Numeric" Placeholder="0" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Date" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <DatePicker Date="{Binding OccurredAt}" MinimumDate="{Binding MinimumOccurredAt}" MaximumDate="{x:Static sys:DateTime.Today}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Note (optional)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Editor Text="{Binding Note}" AutoSize="TextChanges" />
+            </VerticalStackLayout>
+
+            <Button Text="Save"
+                    Command="{Binding SaveCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                    Margin="0,10,0,0" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

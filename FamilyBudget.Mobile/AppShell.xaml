@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="FamilyBudget.Mobile.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:FamilyBudget.Mobile.Views"
+    FlyoutBehavior="Disabled"
+    Title="FamilyBudget.Mobile">
+
+    <ShellContent
+        Route="splash"
+        ContentTemplate="{DataTemplate views:SplashPage}" />
+
+    <ShellContent
+        Route="login"
+        ContentTemplate="{DataTemplate views:LoginPage}" />
+
+    <TabBar Route="main">
+        <ShellContent Title="Wallets" Route="wallets" ContentTemplate="{DataTemplate views:WalletsPage}" />
+        <ShellContent Title="Transactions" Route="transactions" ContentTemplate="{DataTemplate views:TransactionsPage}" />
+        <ShellContent Title="Budgets" Route="budgets" ContentTemplate="{DataTemplate views:BudgetsPage}" />
+        <ShellContent Title="More" Route="more" ContentTemplate="{DataTemplate views:MorePage}" />
+    </TabBar>
+
+</Shell>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             x:DataType="vm:WalletCreateViewModel"
+             x:Class="FamilyBudget.Mobile.Views.WalletCreatePage"
+             Title="New wallet"
+             BackgroundColor="{StaticResource Surface}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Name" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Entry Text="{Binding Name}" Placeholder="e.g. BCA, Cash" />
+            </VerticalStackLayout>
+
+            <Button Text="Save"
+                    Command="{Binding SaveCommand}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                    Margin="0,10,0,0" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

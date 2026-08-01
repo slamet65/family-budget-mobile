@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             xmlns:dtos="clr-namespace:FamilyBudget.Mobile.Services.Api.Dtos"
+             x:DataType="vm:PeriodsViewModel"
+             x:Class="FamilyBudget.Mobile.Views.PeriodsPage"
+             Title="Periods"
+             BackgroundColor="{StaticResource Surface}"
+             x:Name="Root">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="New period" Clicked="OnAddPeriodTapped" IsEnabled="{Binding HasOpenPeriod, Converter={StaticResource InverseBoolConverter}}" />
+    </ContentPage.ToolbarItems>
+
+    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+        <CollectionView ItemsSource="{Binding Periods}" Margin="20,16">
+            <CollectionView.EmptyView>
+                <Label Text="No periods yet." HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource OnSurfaceVariant}" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dtos:PeriodDto">
+                    <Border StrokeShape="RoundRectangle 18" Stroke="Transparent"
+                            BackgroundColor="{StaticResource SurfaceContainer}" Padding="16"
+                            Margin="0,0,0,10">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
+                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name, TargetNullValue='(No name)'}"
+                                   FontSize="15" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
+                            <Label Grid.Row="0" Grid.Column="1"
+                                   Text="{Binding Status}"
+                                   TextColor="{Binding Status, Converter={StaticResource PeriodStatusColorConverter}}"
+                                   FontAttributes="Bold" FontSize="12" VerticalOptions="Center" />
+                            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                   Text="{Binding StartDate, StringFormat='Started {0:d MMM yyyy}'}"
+                                   FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                            <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Text="Close period (tutup buku)"
+                                    Command="{Binding Source={x:Reference Root}, Path=BindingContext.ClosePeriodCommand}"
+                                    CommandParameter="{Binding .}"
+                                    IsVisible="{Binding Status, Converter={StaticResource StringEqualsConverter}, ConverterParameter=open}"
+                                    BackgroundColor="{StaticResource SecondaryContainer}"
+                                    TextColor="{StaticResource OnSecondaryContainer}"
+                                    Margin="0,6,0,0" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+
+</ContentPage>

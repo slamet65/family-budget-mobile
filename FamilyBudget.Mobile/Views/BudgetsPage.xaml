@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             xmlns:controls="clr-namespace:FamilyBudget.Mobile.Controls"
+             x:DataType="vm:BudgetsViewModel"
+             x:Class="FamilyBudget.Mobile.Views.BudgetsPage"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource Surface}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- App bar -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Padding="20,18" ColumnSpacing="12">
+            <Label Grid.Column="0" Text="Budgets" FontSize="24" FontAttributes="Bold" VerticalOptions="Center" />
+            <Border Grid.Column="1"
+                    WidthRequest="42" HeightRequest="42"
+                    StrokeShape="RoundRectangle 21"
+                    Stroke="Transparent"
+                    BackgroundColor="{StaticResource PrimaryContainer}">
+                <Label Text="&#128104;&#8205;&#128105;&#8205;&#128103;" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+                <ScrollView>
+                    <VerticalStackLayout Padding="16,4,16,90" Spacing="0">
+
+                        <Border StrokeShape="RoundRectangle 16" Stroke="Transparent"
+                                BackgroundColor="{StaticResource SurfaceContainer}" Padding="10,0"
+                                Margin="0,0,0,18">
+                            <Picker ItemsSource="{Binding Periods}"
+                                    ItemDisplayBinding="{Binding Name, TargetNullValue='(No name)'}"
+                                    SelectedItem="{Binding SelectedPeriod}"
+                                    TextColor="{StaticResource OnSurface}" />
+                        </Border>
+
+                        <Border IsVisible="{Binding IsPeriodOpen, Converter={StaticResource InverseBoolConverter}}"
+                                StrokeShape="RoundRectangle 14" Stroke="Transparent"
+                                BackgroundColor="{StaticResource SurfaceContainerHigh}" Padding="14"
+                                Margin="0,0,0,18">
+                            <Label Text="This period is closed. Budgets are read-only." TextColor="{StaticResource OnSurfaceVariant}" />
+                        </Border>
+
+                        <!-- Summary card -->
+                        <Border StrokeShape="RoundRectangle 28"
+                                Stroke="Transparent"
+                                BackgroundColor="{StaticResource PrimaryContainer}"
+                                Padding="22"
+                                Margin="0,0,0,22">
+                            <VerticalStackLayout Spacing="10">
+                                <Label Text="Budget summary" FontSize="14" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.8" />
+                                <Grid ColumnDefinitions="*,*,*">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                        <Label Text="Planned" FontSize="12" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.7" />
+                                        <Label Text="{Binding TotalPlanned, Converter={StaticResource MoneyConverter}}"
+                                               FontSize="16" FontAttributes="Bold" TextColor="{StaticResource OnPrimaryContainer}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="Actual" FontSize="12" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.7" />
+                                        <Label Text="{Binding TotalActual, Converter={StaticResource MoneyConverter}}"
+                                               FontSize="16" FontAttributes="Bold" TextColor="{StaticResource OnPrimaryContainer}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                        <Label Text="Remaining" FontSize="12" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.7" />
+                                        <Label Text="{Binding TotalRemaining, Converter={StaticResource MoneyConverter}}"
+                                               FontSize="16" FontAttributes="Bold"
+                                               TextColor="{Binding TotalRemaining, Converter={StaticResource AmountSignColorConverter}}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <CollectionView ItemsSource="{Binding Budgets}">
+                            <CollectionView.EmptyView>
+                                <Label Text="No budgets set for this period yet." HorizontalOptions="Center" Margin="0,20" TextColor="{StaticResource OnSurfaceVariant}" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="vm:BudgetDisplayItem">
+                                    <Border StrokeShape="RoundRectangle 18"
+                                            Stroke="Transparent"
+                                            BackgroundColor="{StaticResource SurfaceContainer}"
+                                            Padding="16"
+                                            Margin="0,0,0,10">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer Tapped="OnBudgetTapped" CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                        <VerticalStackLayout Spacing="6">
+                                            <HorizontalStackLayout Spacing="8">
+                                                <Label Text="{Binding Budget.CategoryName}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
+                                                <Border StrokeShape="RoundRectangle 8" Stroke="Transparent"
+                                                        BackgroundColor="{StaticResource SecondaryContainer}" Padding="7,2"
+                                                        IsVisible="{Binding IsCatchAll}" VerticalOptions="Center">
+                                                    <Label Text="Auto" FontSize="10" TextColor="{StaticResource OnSecondaryContainer}" />
+                                                </Border>
+                                            </HorizontalStackLayout>
+                                            <Grid ColumnDefinitions="*,*,*">
+                                                <VerticalStackLayout Grid.Column="0" Spacing="1">
+                                                    <Label Text="Planned" FontSize="11" TextColor="{StaticResource OnSurfaceVariant}" />
+                                                    <Label Text="{Binding Budget.PlannedAmount, Converter={StaticResource MoneyConverter}}" FontSize="13" TextColor="{StaticResource OnSurface}" />
+                                                </VerticalStackLayout>
+                                                <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                    <Label Text="Actual" FontSize="11" TextColor="{StaticResource OnSurfaceVariant}" />
+                                                    <Label Text="{Binding Budget.ActualAmount, Converter={StaticResource MoneyConverter}}" FontSize="13" TextColor="{StaticResource OnSurface}" />
+                                                </VerticalStackLayout>
+                                                <VerticalStackLayout Grid.Column="2" Spacing="1">
+                                                    <Label Text="Remaining" FontSize="11" TextColor="{StaticResource OnSurfaceVariant}" />
+                                                    <Label Text="{Binding Budget.RemainingAmount, Converter={StaticResource MoneyConverter}}"
+                                                           FontSize="13" FontAttributes="Bold"
+                                                           TextColor="{Binding Budget.RemainingAmount, Converter={StaticResource AmountSignColorConverter}}" />
+                                                </VerticalStackLayout>
+                                            </Grid>
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                    </VerticalStackLayout>
+                </ScrollView>
+            </RefreshView>
+
+            <!-- FAB -->
+            <Border WidthRequest="58" HeightRequest="58"
+                    StrokeShape="RoundRectangle 18"
+                    Stroke="Transparent"
+                    BackgroundColor="{StaticResource PrimaryContainer}"
+                    HorizontalOptions="End" VerticalOptions="End"
+                    Margin="0,0,20,20"
+                    IsVisible="{Binding IsPeriodOpen}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAddBudgetTapped" />
+                </Border.GestureRecognizers>
+                <Label Text="+" FontSize="29" TextColor="{StaticResource OnPrimaryContainer}" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+
+        </Grid>
+
+        <controls:BottomNavBar Grid.Row="2" ActiveTab="budgets" />
+
+    </Grid>
+
+</ContentPage>

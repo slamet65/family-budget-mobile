@@ -1,0 +1,46 @@
+## Visual Studio / .NET Core Core Layout
+############
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ex]Log/
+[Ll]og/
+Generated%20Files/
+
+## .NET MAUI Specific Artifacts
+############
+# Android specific
+*.apk
+*.aab
+*.dex
+
+## iOS / MacCatalyst specific
+*.app
+*.ipa
+*.pkg
+.mtouch-artifacts/
+
+## IDE and User-Specific Files
+############
+.vs/
+.vscode/
+*.user
+*.userosistmanifest
+*.userprefs
+*.suo
+*.sln.docstates
+
+## OS Generated Files
+############
+.DS_Store
+Thumbs.db
+CLAUDE.md
+Requirements.md

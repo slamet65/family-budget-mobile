@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             x:DataType="vm:SplashViewModel"
+             x:Class="FamilyBudget.Mobile.Views.SplashPage"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource SurfaceContainer}">
+
+    <Grid RowDefinitions="*,Auto" Padding="32,0,32,48">
+
+        <VerticalStackLayout Grid.Row="0" VerticalOptions="Center" Spacing="0">
+
+            <Border WidthRequest="140" HeightRequest="140"
+                    StrokeShape="RoundRectangle 34"
+                    Stroke="Transparent"
+                    BackgroundColor="{StaticResource Surface}"
+                    HorizontalOptions="Center"
+                    Margin="0,0,0,28">
+                <Image Source="wallet_icon.svg" WidthRequest="96" HeightRequest="96"
+                       HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+
+            <Label Text="Family Budget" FontSize="30" FontAttributes="Bold"
+                   TextColor="{StaticResource OnPrimaryContainer}" HorizontalOptions="Center" />
+
+            <Label Text="Kelola keuangan keluarga dengan mudah" FontSize="15"
+                   TextColor="{StaticResource OnSurfaceVariant}" HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" Margin="0,6,0,28" />
+
+            <HorizontalStackLayout Spacing="34" HorizontalOptions="Center">
+
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Border WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26" Stroke="Transparent"
+                            BackgroundColor="{StaticResource PrimaryContainer}">
+                        <Label Text="&#128179;" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label Text="Sederhana" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Border WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26" Stroke="Transparent"
+                            BackgroundColor="{StaticResource SuccessContainer}">
+                        <Label Text="&#128200;" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label Text="Terpantau" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                    <Border WidthRequest="52" HeightRequest="52" StrokeShape="RoundRectangle 26" Stroke="Transparent"
+                            BackgroundColor="#FCEACB">
+                        <Label Text="&#128106;" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <Label Text="Bersama" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="10">
+            <Label Text="&#10084;&#65039;" FontSize="20" HorizontalOptions="Center" />
+            <Label Text="Untuk keluarga, oleh keluarga" FontSize="13" TextColor="{StaticResource OnSurfaceVariant}"
+                   HorizontalOptions="Center" Margin="0,0,0,6" />
+            <ProgressBar Progress="{Binding Progress}" ProgressColor="{StaticResource Primary}"
+                         WidthRequest="200" HeightRequest="6" HorizontalOptions="Center" />
+        </VerticalStackLayout>
+
+    </Grid>
+
+</ContentPage>
