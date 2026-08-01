@@ -4,28 +4,28 @@
              xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
              x:DataType="vm:AddUserViewModel"
              x:Class="FamilyBudget.Mobile.Views.AddUserPage"
-             Title="Add family member"
+             Title="Tambah Anggota Keluarga"
              BackgroundColor="{StaticResource Surface}">
 
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
 
             <VerticalStackLayout Spacing="4">
-                <Label Text="Name" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
-                <Entry Text="{Binding Name}" Placeholder="e.g. Bunda" />
+                <Label Text="Nama" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Entry Text="{Binding Name}" Placeholder="mis. Bunda" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4">
                 <Label Text="Email" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
-                <Entry Text="{Binding Email}" Keyboard="Email" Placeholder="name@example.com" />
+                <Entry Text="{Binding Email}" Keyboard="Email" Placeholder="nama@contoh.com" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4">
-                <Label Text="Password (min. 8 characters)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
-                <Entry Text="{Binding Password}" IsPassword="True" Placeholder="Password" />
+                <Label Text="Kata sandi (min. 8 karakter)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Entry Text="{Binding Password}" IsPassword="True" Placeholder="Kata sandi" />
             </VerticalStackLayout>
 
-            <Button Text="Save"
+            <Button Text="Simpan"
                     Command="{Binding SaveCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                     Margin="0,10,0,0" />

@@ -17,7 +17,7 @@ public partial class WalletCreateViewModel(IApiClient apiClient, IUserFeedbackSe
     {
         if (string.IsNullOrWhiteSpace(Name))
         {
-            await feedback.ShowErrorDialogAsync("Enter a wallet name.");
+            await feedback.ShowErrorDialogAsync("Masukkan nama dompet.");
             return;
         }
 

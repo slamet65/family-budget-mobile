@@ -5,7 +5,7 @@ namespace FamilyBudget.Mobile.Services.Feedback;
 public class UserFeedbackService : IUserFeedbackService
 {
     public Task ShowErrorDialogAsync(string message) =>
-        MainThread.InvokeOnMainThreadAsync(() => Shell.Current.DisplayAlertAsync("Something went wrong", message, "OK"));
+        MainThread.InvokeOnMainThreadAsync(() => Shell.Current.DisplayAlertAsync("Terjadi kesalahan", message, "OK"));
 
     public Task ShowInfoDialogAsync(string title, string message) =>
         MainThread.InvokeOnMainThreadAsync(() => Shell.Current.DisplayAlertAsync(title, message, "OK"));

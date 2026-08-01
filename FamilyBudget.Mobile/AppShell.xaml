@@ -4,22 +4,45 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:FamilyBudget.Mobile.Views"
-    FlyoutBehavior="Disabled"
-    Title="FamilyBudget.Mobile">
+    FlyoutBehavior="Flyout"
+    Title="Family Budget">
 
     <ShellContent
         Route="splash"
+        Shell.FlyoutItemIsVisible="False"
+        Shell.FlyoutBehavior="Disabled"
         ContentTemplate="{DataTemplate views:SplashPage}" />
 
     <ShellContent
         Route="login"
+        Shell.FlyoutItemIsVisible="False"
+        Shell.FlyoutBehavior="Disabled"
         ContentTemplate="{DataTemplate views:LoginPage}" />
 
-    <TabBar Route="main">
-        <ShellContent Title="Wallets" Route="wallets" ContentTemplate="{DataTemplate views:WalletsPage}" />
-        <ShellContent Title="Transactions" Route="transactions" ContentTemplate="{DataTemplate views:TransactionsPage}" />
-        <ShellContent Title="Budgets" Route="budgets" ContentTemplate="{DataTemplate views:BudgetsPage}" />
-        <ShellContent Title="More" Route="more" ContentTemplate="{DataTemplate views:MorePage}" />
-    </TabBar>
+    <FlyoutItem Title="Dompet" Route="wallets">
+        <ShellContent ContentTemplate="{DataTemplate views:WalletsPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Transaksi" Route="transactions">
+        <ShellContent ContentTemplate="{DataTemplate views:TransactionsPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Anggaran" Route="budgets">
+        <ShellContent ContentTemplate="{DataTemplate views:BudgetsPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Kategori" Route="categories">
+        <ShellContent ContentTemplate="{DataTemplate views:CategoriesPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Periode" Route="periods">
+        <ShellContent ContentTemplate="{DataTemplate views:PeriodsPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Anggota Keluarga" Route="familyMembers">
+        <ShellContent ContentTemplate="{DataTemplate views:FamilyMembersPage}" />
+    </FlyoutItem>
+
+    <MenuItem Text="Keluar" Clicked="OnLogoutClicked" />
 
 </Shell>

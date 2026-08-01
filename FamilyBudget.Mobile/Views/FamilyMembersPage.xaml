@@ -5,14 +5,14 @@
              xmlns:dtos="clr-namespace:FamilyBudget.Mobile.Services.Api.Dtos"
              x:DataType="vm:FamilyMembersViewModel"
              x:Class="FamilyBudget.Mobile.Views.FamilyMembersPage"
-             Title="Family members"
+             Title="Anggota Keluarga"
              BackgroundColor="{StaticResource Surface}">
 
     <Grid>
         <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
             <CollectionView ItemsSource="{Binding Members}" Margin="20,16,20,90">
                 <CollectionView.EmptyView>
-                    <Label Text="No other family members yet. Tap + to add one."
+                    <Label Text="Belum ada anggota keluarga lain. Ketuk + untuk menambahkan."
                            HorizontalOptions="Center" VerticalOptions="Center" HorizontalTextAlignment="Center"
                            TextColor="{StaticResource OnSurfaceVariant}" Margin="0,40,0,0" />
                 </CollectionView.EmptyView>
@@ -36,7 +36,7 @@
                                     <Label Text="{Binding Name}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
                                     <Label Text="{Binding Email}" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
                                 </VerticalStackLayout>
-                                <Label Grid.Column="2" Text="Reset password" FontSize="12" FontAttributes="Bold"
+                                <Label Grid.Column="2" Text="Atur ulang kata sandi" FontSize="12" FontAttributes="Bold"
                                        TextColor="{StaticResource Primary}" VerticalOptions="Center" />
                             </Grid>
                         </Border>

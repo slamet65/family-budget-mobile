@@ -30,6 +30,14 @@ public partial interface IApiClient
 
     Task<List<TransactionDto>> GetTransactionsAsync(TransactionListQuery query, CancellationToken ct = default);
 
+    Task<TransactionDto> GetTransactionAsync(int id, CancellationToken ct = default);
+
+    Task<TransactionDto> UpdateIncomeAsync(int id, CreateIncomeRequest request, CancellationToken ct = default);
+
+    Task<TransactionDto> UpdateExpenseAsync(int id, CreateExpenseRequest request, CancellationToken ct = default);
+
+    Task<TransactionDto> UpdateTransferAsync(int id, CreateTransferRequest request, CancellationToken ct = default);
+
     Task<List<BudgetDto>> GetBudgetsAsync(int periodId, CancellationToken ct = default);
 
     Task<BudgetUpsertResponseDto> UpsertBudgetAsync(int periodId, int categoryId, UpsertBudgetRequest request, CancellationToken ct = default);

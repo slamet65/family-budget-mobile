@@ -8,11 +8,15 @@ using FamilyBudget.Mobile.ViewModels.Base;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
+[QueryProperty(nameof(TransactionIdRaw), "transactionId")]
 public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     public ObservableCollection<WalletDto> Wallets { get; } = [];
 
     public ObservableCollection<CategoryPickerOption> CategoryOptions { get; } = [];
+
+    [ObservableProperty]
+    private string? transactionIdRaw;
 
     [ObservableProperty]
     private PeriodDto? currentPeriod;
@@ -43,9 +47,16 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
 
     public DateTime MinimumOccurredAt => CurrentPeriod?.StartDate.Date ?? DateTime.Today;
 
+    public bool IsEditMode => int.TryParse(TransactionIdRaw, out _);
+
+    public string PageTitle => IsEditMode ? "Ubah Transaksi" : "Tambah Transaksi";
+
     [RelayCommand]
     private Task LoadAsync() => ExecuteSafelyAsync(async () =>
     {
+        OnPropertyChanged(nameof(IsEditMode));
+        OnPropertyChanged(nameof(PageTitle));
+
         Wallets.Clear();
         foreach (var wallet in await apiClient.GetWalletsAsync())
         {
@@ -64,19 +75,43 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
 
         CurrentPeriod = await apiClient.GetCurrentPeriodAsync();
         HasOpenPeriod = CurrentPeriod is not null;
-        OccurredAt = DateTime.Today < MinimumOccurredAt ? MinimumOccurredAt : DateTime.Today;
         OnPropertyChanged(nameof(MinimumOccurredAt));
+
+        if (IsEditMode)
+        {
+            var transaction = await apiClient.GetTransactionAsync(int.Parse(TransactionIdRaw!));
+            SelectedType = transaction.Type;
+            FromWallet = transaction.FromWalletId is { } fromWalletId ? Wallets.FirstOrDefault(w => w.Id == fromWalletId) : null;
+            ToWallet = transaction.ToWalletId is { } toWalletId ? Wallets.FirstOrDefault(w => w.Id == toWalletId) : null;
+            SelectedCategoryOption = transaction.CategoryId is { } categoryId ? CategoryOptions.FirstOrDefault(c => c.Id == categoryId) : null;
+            AmountText = transaction.Amount.ToString();
+            // .UtcDateTime, not .Date -- occurredAt is always built/stored as UTC midnight (see
+            // the comment in SaveAsync), so this recovers the same calendar date that was saved.
+            OccurredAt = transaction.OccurredAt.UtcDateTime.Date;
+            Note = transaction.Note;
+        }
+        else
+        {
+            OccurredAt = DateTime.Today < MinimumOccurredAt ? MinimumOccurredAt : DateTime.Today;
+        }
     });
 
     [RelayCommand]
-    private void SetType(string type) => SelectedType = type;
+    private void SetType(string type)
+    {
+        // The API rejects changing a transaction's type on PUT -- delete and recreate instead.
+        if (!IsEditMode)
+        {
+            SelectedType = type;
+        }
+    }
 
     [RelayCommand]
     private Task SaveAsync() => ExecuteSafelyAsync(async () =>
     {
         if (!long.TryParse(AmountText, out var amount) || amount <= 0)
         {
-            await feedback.ShowErrorDialogAsync("Enter a valid amount.");
+            await feedback.ShowErrorDialogAsync("Masukkan jumlah yang valid.");
             return;
         }
 
@@ -86,25 +121,29 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
         // shift the date across midnight UTC and wrongly land before the period start.
         var occurredAtUtc = new DateTimeOffset(OccurredAt.Year, OccurredAt.Month, OccurredAt.Day, 0, 0, 0, TimeSpan.Zero);
         var note = string.IsNullOrWhiteSpace(Note) ? null : Note;
+        var id = IsEditMode ? int.Parse(TransactionIdRaw!) : 0;
 
         switch (SelectedType)
         {
             case "income" when ToWallet is not null:
-                await apiClient.CreateIncomeAsync(new CreateIncomeRequest(ToWallet.Id, amount, occurredAtUtc, note));
+                var incomeRequest = new CreateIncomeRequest(ToWallet.Id, amount, occurredAtUtc, note);
+                await (IsEditMode ? apiClient.UpdateIncomeAsync(id, incomeRequest) : apiClient.CreateIncomeAsync(incomeRequest));
                 break;
             case "expense" when FromWallet is not null && SelectedCategoryOption is not null:
-                await apiClient.CreateExpenseAsync(new CreateExpenseRequest(FromWallet.Id, SelectedCategoryOption.Id, amount, occurredAtUtc, note));
+                var expenseRequest = new CreateExpenseRequest(FromWallet.Id, SelectedCategoryOption.Id, amount, occurredAtUtc, note);
+                await (IsEditMode ? apiClient.UpdateExpenseAsync(id, expenseRequest) : apiClient.CreateExpenseAsync(expenseRequest));
                 break;
             case "transfer" when FromWallet is not null && ToWallet is not null:
                 if (FromWallet.Id == ToWallet.Id)
                 {
-                    await feedback.ShowErrorDialogAsync("Source and destination wallets must differ.");
+                    await feedback.ShowErrorDialogAsync("Dompet asal dan tujuan harus berbeda.");
                     return;
                 }
-                await apiClient.CreateTransferAsync(new CreateTransferRequest(FromWallet.Id, ToWallet.Id, amount, occurredAtUtc, note));
+                var transferRequest = new CreateTransferRequest(FromWallet.Id, ToWallet.Id, amount, occurredAtUtc, note);
+                await (IsEditMode ? apiClient.UpdateTransferAsync(id, transferRequest) : apiClient.CreateTransferAsync(transferRequest));
                 break;
             default:
-                await feedback.ShowErrorDialogAsync("Fill in all required fields.");
+                await feedback.ShowErrorDialogAsync("Lengkapi semua kolom yang wajib diisi.");
                 return;
         }
 

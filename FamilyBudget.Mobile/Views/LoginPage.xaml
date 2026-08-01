@@ -5,30 +5,100 @@
              x:DataType="vm:LoginViewModel"
              x:Class="FamilyBudget.Mobile.Views.LoginPage"
              Shell.NavBarIsVisible="False"
-             Title="Login">
+             Title="Masuk">
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#EFEDFC" Offset="0.0" />
+            <GradientStop Color="#E3DFFA" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
 
     <ScrollView>
-        <VerticalStackLayout Padding="30" Spacing="16" VerticalOptions="Center">
+        <VerticalStackLayout Padding="28,60,28,28" Spacing="0">
 
-            <Label Text="Family Budget"
-                   Style="{StaticResource Headline}"
-                   HorizontalOptions="Center" />
+            <!-- Brand row -->
+            <HorizontalStackLayout Spacing="10">
+                <Border WidthRequest="40" HeightRequest="40"
+                        StrokeShape="RoundRectangle 12"
+                        Stroke="Transparent"
+                        BackgroundColor="{StaticResource Primary}">
+                    <Label Text="&#128179;" FontSize="17" TextColor="{StaticResource OnPrimary}"
+                           HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Label Text="Family Budget" FontSize="15" FontAttributes="Bold"
+                       TextColor="{StaticResource OnSurface}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
 
-            <Entry Placeholder="Email"
-                   Keyboard="Email"
-                   Text="{Binding Email}" />
+            <!-- Headline -->
+            <Label FontSize="28" FontAttributes="Bold"
+                   TextColor="{StaticResource OnSurface}" Margin="0,34,0,0" LineBreakMode="WordWrap">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="Selamat datang" />
+                        <Span Text="&#10;" />
+                        <Span Text="kembali" />
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
 
-            <Entry Placeholder="Password"
-                   IsPassword="True"
-                   Text="{Binding Password}" />
+            <Label Text="Masuk untuk lanjut kelola keuangan keluarga bersama."
+                   FontSize="14" TextColor="{StaticResource OnSurfaceVariant}"
+                   Margin="0,8,0,0" />
 
-            <Button Text="Log in"
-                    Command="{Binding LoginCommand}"
-                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" />
+            <!-- Form -->
+            <VerticalStackLayout Spacing="16" Margin="0,30,0,0">
 
-            <ActivityIndicator IsRunning="{Binding IsBusy}"
-                                IsVisible="{Binding IsBusy}"
-                                HorizontalOptions="Center" />
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Email" FontSize="12.5" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
+                    <Border StrokeShape="RoundRectangle 14" Stroke="{StaticResource Outline}" StrokeThickness="1"
+                            BackgroundColor="{StaticResource SurfaceContainer}" Padding="14,2">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <Label Grid.Column="0" Text="&#9993;" FontSize="16" TextColor="{StaticResource OnSurfaceVariant}" VerticalOptions="Center" />
+                            <Entry Grid.Column="1" Placeholder="nama@email.com" Keyboard="Email"
+                                   Text="{Binding Email}" BackgroundColor="Transparent" TextColor="{StaticResource OnSurface}" />
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Kata sandi" FontSize="12.5" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
+                    <Border StrokeShape="RoundRectangle 14" Stroke="{StaticResource Outline}" StrokeThickness="1"
+                            BackgroundColor="{StaticResource SurfaceContainer}" Padding="14,2">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <Label Grid.Column="0" Text="&#128274;" FontSize="15" TextColor="{StaticResource OnSurfaceVariant}" VerticalOptions="Center" />
+                            <Entry Grid.Column="1" Placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                                   IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
+                                   Text="{Binding Password}" BackgroundColor="Transparent" TextColor="{StaticResource OnSurface}" />
+                            <Label Grid.Column="2" Text="&#128065;" FontSize="15" TextColor="{StaticResource OnSurfaceVariant}"
+                                   VerticalOptions="Center">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleShowPasswordCommand}" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <Button Text="Masuk"
+                        Command="{Binding LoginCommand}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                        TextColor="{StaticResource OnPrimary}"
+                        FontAttributes="Bold"
+                        CornerRadius="16"
+                        HeightRequest="52"
+                        Margin="0,8,0,0">
+                    <Button.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="{StaticResource Primary}" Offset="0.0" />
+                            <GradientStop Color="#4B3AA8" Offset="1.0" />
+                        </LinearGradientBrush>
+                    </Button.Background>
+                </Button>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+
+            </VerticalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>

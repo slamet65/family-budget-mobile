@@ -36,7 +36,7 @@ public partial class BudgetEditViewModel(IApiClient apiClient, IUserFeedbackServ
 
     public bool IsEditMode => int.TryParse(CategoryIdRaw, out _);
 
-    public string PageTitle => IsEditMode ? "Edit budget" : "Add budget";
+    public string PageTitle => IsEditMode ? "Ubah Anggaran" : "Tambah Anggaran";
 
     partial void OnInitialPlannedAmountRawChanged(string? value)
     {
@@ -78,7 +78,7 @@ public partial class BudgetEditViewModel(IApiClient apiClient, IUserFeedbackServ
     {
         if (!long.TryParse(PlannedAmountText, out var amount) || amount < 0)
         {
-            await feedback.ShowErrorDialogAsync("Enter a valid amount.");
+            await feedback.ShowErrorDialogAsync("Masukkan jumlah yang valid.");
             return;
         }
 
@@ -93,7 +93,7 @@ public partial class BudgetEditViewModel(IApiClient apiClient, IUserFeedbackServ
         }
         else
         {
-            await feedback.ShowErrorDialogAsync("Choose a category.");
+            await feedback.ShowErrorDialogAsync("Pilih kategori.");
             return;
         }
 

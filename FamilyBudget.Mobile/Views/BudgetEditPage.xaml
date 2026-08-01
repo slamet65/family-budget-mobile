@@ -11,21 +11,21 @@
         <VerticalStackLayout Padding="20" Spacing="16">
 
             <VerticalStackLayout Spacing="4" IsVisible="{Binding IsEditMode}">
-                <Label Text="Category" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Label Text="Kategori" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
                 <Label Text="{Binding CategoryDisplayName}" FontSize="16" TextColor="{StaticResource OnSurface}" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4" IsVisible="{Binding IsEditMode, Converter={StaticResource InverseBoolConverter}}">
-                <Label Text="Category" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Label Text="Kategori" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
                 <Picker ItemsSource="{Binding AvailableCategories}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedCategoryOption}" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4">
-                <Label Text="Planned amount (Rp)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Label Text="Jumlah rencana (Rp)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
                 <Entry Text="{Binding PlannedAmountText}" Keyboard="Numeric" Placeholder="0" />
             </VerticalStackLayout>
 
-            <Button Text="Save"
+            <Button Text="Simpan"
                     Command="{Binding SaveCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                     Margin="0,10,0,0" />

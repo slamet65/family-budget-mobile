@@ -20,11 +20,11 @@ public partial class TransactionsViewModel(IApiClient apiClient, IUserFeedbackSe
 
     public ObservableCollection<TransactionTypeOption> TypeOptions { get; } =
     [
-        new(null, "All types"),
-        new("income", "Income"),
-        new("expense", "Expense"),
+        new(null, "Semua jenis"),
+        new("income", "Pemasukan"),
+        new("expense", "Pengeluaran"),
         new("transfer", "Transfer"),
-        new("adjustment", "Adjustment"),
+        new("adjustment", "Penyesuaian"),
     ];
 
     [ObservableProperty]
@@ -43,7 +43,7 @@ public partial class TransactionsViewModel(IApiClient apiClient, IUserFeedbackSe
 
         var periods = await apiClient.GetPeriodsAsync();
         PeriodOptions.Clear();
-        PeriodOptions.Add(new TransactionFilterOption(null, "All periods"));
+        PeriodOptions.Add(new TransactionFilterOption(null, "Semua periode"));
         foreach (var period in periods)
         {
             PeriodOptions.Add(new TransactionFilterOption(period.Id, period.Name ?? period.StartDate.ToString("d")));
@@ -51,7 +51,7 @@ public partial class TransactionsViewModel(IApiClient apiClient, IUserFeedbackSe
 
         var wallets = await apiClient.GetWalletsAsync();
         WalletOptions.Clear();
-        WalletOptions.Add(new TransactionFilterOption(null, "All wallets"));
+        WalletOptions.Add(new TransactionFilterOption(null, "Semua dompet"));
         foreach (var wallet in wallets)
         {
             WalletOptions.Add(new TransactionFilterOption(wallet.Id, wallet.Name));

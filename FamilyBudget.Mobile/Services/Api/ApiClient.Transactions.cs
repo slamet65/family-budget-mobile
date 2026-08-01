@@ -32,4 +32,16 @@ public partial class ApiClient
         var uri = parameters.Count > 0 ? $"/transactions?{string.Join('&', parameters)}" : "/transactions";
         return SendAsync<List<TransactionDto>>(HttpMethod.Get, uri, null, ct);
     }
+
+    public Task<TransactionDto> GetTransactionAsync(int id, CancellationToken ct = default) =>
+        SendAsync<TransactionDto>(HttpMethod.Get, $"/transactions/{id}", null, ct);
+
+    public Task<TransactionDto> UpdateIncomeAsync(int id, CreateIncomeRequest request, CancellationToken ct = default) =>
+        SendAsync<TransactionDto>(HttpMethod.Put, $"/transactions/{id}", request, ct);
+
+    public Task<TransactionDto> UpdateExpenseAsync(int id, CreateExpenseRequest request, CancellationToken ct = default) =>
+        SendAsync<TransactionDto>(HttpMethod.Put, $"/transactions/{id}", request, ct);
+
+    public Task<TransactionDto> UpdateTransferAsync(int id, CreateTransferRequest request, CancellationToken ct = default) =>
+        SendAsync<TransactionDto>(HttpMethod.Put, $"/transactions/{id}", request, ct);
 }

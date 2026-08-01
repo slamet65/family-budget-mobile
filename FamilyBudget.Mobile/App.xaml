@@ -14,6 +14,7 @@
             <conv:InverseBoolConverter x:Key="InverseBoolConverter" />
             <conv:MoneyConverter x:Key="MoneyConverter" />
             <conv:PeriodStatusColorConverter x:Key="PeriodStatusColorConverter" />
+            <conv:PeriodStatusTextConverter x:Key="PeriodStatusTextConverter" />
             <conv:TransactionIconConverter x:Key="TransactionIconConverter" />
             <conv:TransactionAmountColorConverter x:Key="TransactionAmountColorConverter" />
             <conv:TransactionAmountTextConverter x:Key="TransactionAmountTextConverter" />

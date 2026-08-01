@@ -5,18 +5,18 @@
              xmlns:dtos="clr-namespace:FamilyBudget.Mobile.Services.Api.Dtos"
              x:DataType="vm:PeriodsViewModel"
              x:Class="FamilyBudget.Mobile.Views.PeriodsPage"
-             Title="Periods"
+             Title="Periode"
              BackgroundColor="{StaticResource Surface}"
              x:Name="Root">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="New period" Clicked="OnAddPeriodTapped" IsEnabled="{Binding HasOpenPeriod, Converter={StaticResource InverseBoolConverter}}" />
+        <ToolbarItem Text="Periode Baru" Clicked="OnAddPeriodTapped" IsEnabled="{Binding HasOpenPeriod, Converter={StaticResource InverseBoolConverter}}" />
     </ContentPage.ToolbarItems>
 
     <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
         <CollectionView ItemsSource="{Binding Periods}" Margin="20,16">
             <CollectionView.EmptyView>
-                <Label Text="No periods yet." HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Label Text="Belum ada periode." HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource OnSurfaceVariant}" />
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="dtos:PeriodDto">
@@ -24,17 +24,17 @@
                             BackgroundColor="{StaticResource SurfaceContainer}" Padding="16"
                             Margin="0,0,0,10">
                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="4">
-                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name, TargetNullValue='(No name)'}"
+                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name, TargetNullValue='(Tanpa nama)'}"
                                    FontSize="15" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
                             <Label Grid.Row="0" Grid.Column="1"
-                                   Text="{Binding Status}"
+                                   Text="{Binding Status, Converter={StaticResource PeriodStatusTextConverter}}"
                                    TextColor="{Binding Status, Converter={StaticResource PeriodStatusColorConverter}}"
                                    FontAttributes="Bold" FontSize="12" VerticalOptions="Center" />
                             <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                                   Text="{Binding StartDate, StringFormat='Started {0:d MMM yyyy}'}"
+                                   Text="{Binding StartDate, StringFormat='Mulai {0:d MMM yyyy}'}"
                                    FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
                             <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                                    Text="Close period (tutup buku)"
+                                    Text="Tutup Buku"
                                     Command="{Binding Source={x:Reference Root}, Path=BindingContext.ClosePeriodCommand}"
                                     CommandParameter="{Binding .}"
                                     IsVisible="{Binding Status, Converter={StaticResource StringEqualsConverter}, ConverterParameter=open}"

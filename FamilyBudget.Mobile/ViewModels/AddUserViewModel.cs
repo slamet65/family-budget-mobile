@@ -23,17 +23,17 @@ public partial class AddUserViewModel(IApiClient apiClient, IUserFeedbackService
     {
         if (string.IsNullOrWhiteSpace(Name) || string.IsNullOrWhiteSpace(Email))
         {
-            await feedback.ShowErrorDialogAsync("Enter a name and email.");
+            await feedback.ShowErrorDialogAsync("Masukkan nama dan email.");
             return;
         }
         if (Password.Length < 8)
         {
-            await feedback.ShowErrorDialogAsync("Password must be at least 8 characters.");
+            await feedback.ShowErrorDialogAsync("Kata sandi minimal 8 karakter.");
             return;
         }
 
         var created = await apiClient.CreateUserAsync(new CreateUserRequest(Name.Trim(), Email.Trim(), Password));
-        await feedback.ShowInfoDialogAsync("User created", $"{created.Name} can now log in with this email and password.");
+        await feedback.ShowInfoDialogAsync("Pengguna dibuat", $"{created.Name} sekarang bisa masuk dengan email dan kata sandi ini.");
         await Shell.Current.GoToAsync("..");
     });
 }

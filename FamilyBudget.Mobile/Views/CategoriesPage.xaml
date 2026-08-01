@@ -5,16 +5,16 @@
              xmlns:dtos="clr-namespace:FamilyBudget.Mobile.Services.Api.Dtos"
              x:DataType="vm:CategoriesViewModel"
              x:Class="FamilyBudget.Mobile.Views.CategoriesPage"
-             Title="Categories">
+             Title="Kategori">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Add" Clicked="OnAddCategoryTapped" />
+        <ToolbarItem Text="Tambah" Clicked="OnAddCategoryTapped" />
     </ContentPage.ToolbarItems>
 
     <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
         <CollectionView ItemsSource="{Binding Groups}" IsGrouped="True" Margin="20,0">
             <CollectionView.EmptyView>
-                <Label Text="No categories yet." HorizontalOptions="Center" VerticalOptions="Center" />
+                <Label Text="Belum ada kategori." HorizontalOptions="Center" VerticalOptions="Center" />
             </CollectionView.EmptyView>
             <CollectionView.GroupHeaderTemplate>
                 <DataTemplate x:DataType="vm:CategoryGroup">

@@ -23,6 +23,6 @@ public partial class SplashViewModel(IAuthService authService) : ObservableObjec
         }
 
         var token = await tokenTask;
-        await Shell.Current.GoToAsync(string.IsNullOrEmpty(token) ? "//login" : "//main");
+        await Shell.Current.GoToAsync(string.IsNullOrEmpty(token) ? "//login" : "//wallets");
     }
 }

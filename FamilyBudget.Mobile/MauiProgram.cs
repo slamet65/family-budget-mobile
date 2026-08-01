@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Maui;
+﻿using System.Globalization;
+using CommunityToolkit.Maui;
 using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Auth;
@@ -13,6 +14,13 @@ public static class MauiProgram
 {
 	public static MauiApp CreateMauiApp()
 	{
+		// The whole UI is Indonesian -- set this as the default thread culture so date
+		// StringFormat bindings (e.g. "d MMM yyyy") render Indonesian month names
+		// regardless of the device's own locale, without a converter on every binding.
+		var idCulture = CultureInfo.GetCultureInfo("id-ID");
+		CultureInfo.DefaultThreadCurrentCulture = idCulture;
+		CultureInfo.DefaultThreadCurrentUICulture = idCulture;
+
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
@@ -90,9 +98,6 @@ public static class MauiProgram
 
 		services.AddTransient<PeriodClosePage>();
 		services.AddTransient<PeriodCloseViewModel>();
-
-		services.AddTransient<MorePage>();
-		services.AddTransient<MoreViewModel>();
 
 		services.AddTransient<AddUserPage>();
 		services.AddTransient<AddUserViewModel>();

@@ -61,17 +61,17 @@ public partial class PeriodCloseViewModel(IApiClient apiClient, IUserFeedbackSer
         {
             if (!long.TryParse(entry.CountedBalanceText, out var counted))
             {
-                await feedback.ShowErrorDialogAsync($"Enter the counted balance for {entry.WalletName}.");
+                await feedback.ShowErrorDialogAsync($"Masukkan saldo fisik untuk {entry.WalletName}.");
                 return;
             }
             walletBalances.Add(new WalletBalanceEntry(entry.WalletId, counted));
         }
 
         var confirmed = await feedback.ShowConfirmationAsync(
-            "Close this period?",
-            "This locks the period and records any wallet balance adjustments. It cannot be undone.",
-            "Close period",
-            "Cancel");
+            "Tutup periode ini?",
+            "Ini akan mengunci periode dan mencatat penyesuaian saldo dompet. Tindakan ini tidak dapat dibatalkan.",
+            "Tutup Buku",
+            "Batal");
         if (!confirmed)
         {
             return;
@@ -87,7 +87,7 @@ public partial class PeriodCloseViewModel(IApiClient apiClient, IUserFeedbackSer
             Reconciliations.Clear();
             foreach (var reconciliation in response.Reconciliations)
             {
-                var walletName = WalletEntries.FirstOrDefault(w => w.WalletId == reconciliation.WalletId)?.WalletName ?? $"Wallet #{reconciliation.WalletId}";
+                var walletName = WalletEntries.FirstOrDefault(w => w.WalletId == reconciliation.WalletId)?.WalletName ?? $"Dompet #{reconciliation.WalletId}";
                 Reconciliations.Add(new ReconciliationDisplayItem(walletName, reconciliation.SystemBalance, reconciliation.CountedBalance, reconciliation.Difference));
             }
 
@@ -98,5 +98,5 @@ public partial class PeriodCloseViewModel(IApiClient apiClient, IUserFeedbackSer
     }
 
     [RelayCommand]
-    private async Task DoneAsync() => await Shell.Current.GoToAsync("//main/wallets");
+    private async Task DoneAsync() => await Shell.Current.GoToAsync("//wallets");
 }

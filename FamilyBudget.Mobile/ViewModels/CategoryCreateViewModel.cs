@@ -10,7 +10,7 @@ namespace FamilyBudget.Mobile.ViewModels;
 
 public partial class CategoryCreateViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
-    private static readonly ParentCategoryOption NoParent = new(null, "None (top-level)");
+    private static readonly ParentCategoryOption NoParent = new(null, "Tidak ada (kategori utama)");
 
     public ObservableCollection<ParentCategoryOption> ParentOptions { get; } = [NoParent];
 
@@ -53,7 +53,7 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IUserFeedback
     {
         if (string.IsNullOrWhiteSpace(Name))
         {
-            await feedback.ShowErrorDialogAsync("Enter a category name.");
+            await feedback.ShowErrorDialogAsync("Masukkan nama kategori.");
             return;
         }
 

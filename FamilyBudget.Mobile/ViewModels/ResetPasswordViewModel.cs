@@ -25,19 +25,19 @@ public partial class ResetPasswordViewModel(IApiClient apiClient, IUserFeedbackS
     {
         if (NewPassword.Length < 8)
         {
-            await feedback.ShowErrorDialogAsync("Password must be at least 8 characters.");
+            await feedback.ShowErrorDialogAsync("Kata sandi minimal 8 karakter.");
             return;
         }
 
         var confirmed = await feedback.ShowConfirmationAsync(
-            "Reset password?", $"{UserName}'s current password will stop working immediately.", "Reset", "Cancel");
+            "Atur ulang kata sandi?", $"Kata sandi {UserName} saat ini akan langsung berhenti berfungsi.", "Atur Ulang", "Batal");
         if (!confirmed)
         {
             return;
         }
 
         await apiClient.ResetPasswordAsync(UserId, new ResetPasswordRequest(NewPassword));
-        await feedback.ShowInfoDialogAsync("Password reset", $"{UserName} can now log in with the new password.");
+        await feedback.ShowInfoDialogAsync("Kata sandi diatur ulang", $"{UserName} sekarang bisa masuk dengan kata sandi baru.");
         await Shell.Current.GoToAsync("..");
     });
 }

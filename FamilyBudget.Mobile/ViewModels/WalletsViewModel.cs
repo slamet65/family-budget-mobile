@@ -22,7 +22,7 @@ public partial class WalletsViewModel(IApiClient apiClient, IUserFeedbackService
     private long totalBalance;
 
     [ObservableProperty]
-    private string periodStatusText = "No open period";
+    private string periodStatusText = "Tidak ada periode aktif";
 
     [RelayCommand]
     private Task LoadAsync() => ExecuteSafelyAsync(async () =>
@@ -37,6 +37,6 @@ public partial class WalletsViewModel(IApiClient apiClient, IUserFeedbackService
 
         CurrentPeriod = await apiClient.GetCurrentPeriodAsync();
         HasOpenPeriod = CurrentPeriod is not null;
-        PeriodStatusText = HasOpenPeriod ? "Current period is active" : "No open period";
+        PeriodStatusText = HasOpenPeriod ? "Periode saat ini aktif" : "Tidak ada periode aktif";
     });
 }

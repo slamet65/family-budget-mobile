@@ -21,10 +21,10 @@
 		<MauiXamlInflator>SourceGen</MauiXamlInflator>
 
 		<!-- Display name -->
-		<ApplicationTitle>FamilyBudget.Mobile</ApplicationTitle>
+		<ApplicationTitle>Family Budget</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.familybudget.mobile</ApplicationId>
+		<ApplicationId>id.my.alannursalim.familybudget.mobile</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>

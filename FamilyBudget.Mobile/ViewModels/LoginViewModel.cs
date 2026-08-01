@@ -17,12 +17,18 @@ public partial class LoginViewModel(IApiClient apiClient, IAuthService authServi
     [ObservableProperty]
     private string password = string.Empty;
 
+    [ObservableProperty]
+    private bool isPasswordVisible;
+
+    [RelayCommand]
+    private void ToggleShowPassword() => IsPasswordVisible = !IsPasswordVisible;
+
     [RelayCommand]
     private Task LoginAsync() => ExecuteSafelyAsync(async () =>
     {
         var response = await apiClient.LoginAsync(new LoginRequest(Email.Trim(), Password));
         await authService.SaveSessionAsync(response.Token, response.User);
         Password = string.Empty;
-        await Shell.Current.GoToAsync("//main");
+        await Shell.Current.GoToAsync("//wallets");
     });
 }
