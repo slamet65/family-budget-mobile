@@ -8,17 +8,18 @@ This app is a client for a companion REST API (a separate Cloudflare Workers pro
 
 - **Auth** — email/password login, session persisted on-device
 - **Wallets** — balances across multiple wallets (cash, bank accounts, etc.), combined family total
-- **Transactions** — income, expense, and transfer entries, with filtering by period/wallet/type
+- **Transactions** — income, expense, and transfer entries, with filtering by period/wallet/type; existing entries can be edited (type is locked once created)
 - **Categories** — one level of subcategories, plus an automatic "catch-all" category tracking uncommitted balance
 - **Budgets** — planned vs. actual vs. remaining per category per period
 - **Periods & period close ("tutup buku")** — a guided wallet-reconciliation wizard that locks a period, records any counted-vs-system balance adjustments, and opens the next period with budgets carried forward
 - **Family members** — add a new family member, or reset another member's password
+- **Full Bahasa Indonesia UI** — all screens and system dates (`id-ID` culture, set globally at startup)
 
 ## Tech stack
 
-- **.NET MAUI**, targeting `net10.0-android` only (Android-only by design — see `FamilyBudget.Mobile/REQUIREMENTS.md`)
+- **.NET MAUI**, targeting `net10.0-android` only (Android-only by design)
 - **MVVM** via [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/)
-- **Shell navigation** (`AppShell.xaml`) with a splash screen, login flow, and a bottom-tab main area
+- **Shell navigation** (`AppShell.xaml`) with a splash screen, login flow, and a flyout (side drawer) main area — six flat top-level destinations (Wallets, Transactions, Budgets, Categories, Periods, Family members)
 - Typed `HttpClient` (`System.Net.Http.Json`) talking to the backend API, with a `DelegatingHandler` attaching the auth token to every request
 - [CommunityToolkit.Maui](https://learn.microsoft.com/dotnet/communitytoolkit/maui/) for snackbars and other UI extras
 - Material You–inspired visual design, hand-built (no design system package)
@@ -37,8 +38,7 @@ FamilyBudget.Mobile/
     Feedback/             # Error dialogs / snackbars
   ViewModels/             # One per page (CommunityToolkit.Mvvm observable objects)
   Views/                  # One XAML page per ViewModel
-  Controls/               # Reusable custom controls (e.g. bottom navigation bar)
-  Converters/             # XAML value converters (currency formatting, etc.)
+  Converters/             # XAML value converters (currency formatting, icons, etc.)
   Resources/              # Styles, fonts, app icon, splash screen assets
 ```
 

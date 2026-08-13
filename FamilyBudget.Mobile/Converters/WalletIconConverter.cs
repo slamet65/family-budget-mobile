@@ -4,16 +4,15 @@ using FamilyBudget.Mobile.Services.Api.Dtos;
 
 namespace FamilyBudget.Mobile.Converters;
 
-public class TransactionIconConverter : IValueConverter
+// Picks a glyph from IconGlyphs.WalletPalette deterministically by wallet Id, so a given
+// wallet always shows the same icon on every device without an `icon` field on the API.
+public class WalletIconConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        (value as TransactionDto)?.Type switch
+        value switch
         {
-            "income" => IconGlyphs.CallReceived,
-            "expense" => IconGlyphs.CallMade,
-            "transfer" => IconGlyphs.SwapHoriz,
-            "adjustment" => IconGlyphs.Balance,
-            _ => IconGlyphs.RadioButtonUnchecked,
+            WalletDto wallet => IconGlyphs.WalletPalette[wallet.Id % IconGlyphs.WalletPalette.Length],
+            _ => IconGlyphs.AccountBalanceWallet,
         };
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>

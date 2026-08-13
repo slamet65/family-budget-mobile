@@ -84,7 +84,10 @@
                                                     StrokeShape="RoundRectangle 16"
                                                     Stroke="Transparent"
                                                     BackgroundColor="{StaticResource Surface}">
-                                                <Label Text="&#128091;" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                                                <Label Text="{Binding ., Converter={StaticResource WalletIconConverter}}"
+                                                       FontFamily="MaterialSymbolsOutlined" FontSize="24"
+                                                       TextColor="{StaticResource OnSurface}"
+                                                       HorizontalOptions="Center" VerticalOptions="Center" />
                                             </Border>
                                             <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
                                                 <Label Text="{Binding Name}" FontSize="14" TextColor="{StaticResource OnSurfaceVariant}" />

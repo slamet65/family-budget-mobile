@@ -16,6 +16,7 @@
             <conv:PeriodStatusColorConverter x:Key="PeriodStatusColorConverter" />
             <conv:PeriodStatusTextConverter x:Key="PeriodStatusTextConverter" />
             <conv:TransactionIconConverter x:Key="TransactionIconConverter" />
+            <conv:WalletIconConverter x:Key="WalletIconConverter" />
             <conv:TransactionAmountColorConverter x:Key="TransactionAmountColorConverter" />
             <conv:TransactionAmountTextConverter x:Key="TransactionAmountTextConverter" />
             <conv:TransactionDescriptionConverter x:Key="TransactionDescriptionConverter" />

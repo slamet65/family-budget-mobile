@@ -63,7 +63,7 @@
                                                     BackgroundColor="{StaticResource Surface}">
                                                 <Label Text="{Binding ., Converter={StaticResource TransactionIconConverter}}"
                                                        TextColor="{Binding ., Converter={StaticResource TransactionAmountColorConverter}}"
-                                                       FontSize="18" FontAttributes="Bold"
+                                                       FontFamily="MaterialSymbolsOutlined" FontSize="20"
                                                        HorizontalOptions="Center" VerticalOptions="Center" />
                                             </Border>
                                             <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">

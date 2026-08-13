@@ -9,8 +9,8 @@ public class TransactionDescriptionConverter : IValueConverter
         value switch
         {
             TransactionDto { Type: "income" } t => t.ToWalletName ?? string.Empty,
-            TransactionDto { Type: "expense" } t => $"{t.CategoryName} • {t.FromWalletName}",
-            TransactionDto { Type: "transfer" } t => $"{t.FromWalletName} → {t.ToWalletName}",
+            TransactionDto { Type: "expense" } t => $"{t.CategoryName} {(string.IsNullOrEmpty(t.Note) ? "" : "- " + t.Note)}",
+            TransactionDto { Type: "transfer" } t => $"{t.FromWalletName} ke {t.ToWalletName}",
             TransactionDto { Type: "adjustment" } t => $"{t.FromWalletName ?? t.ToWalletName} (penyesuaian)",
             _ => string.Empty,
         };
