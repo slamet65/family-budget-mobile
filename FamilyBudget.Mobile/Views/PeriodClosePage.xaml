@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             xmlns:behaviors="clr-namespace:FamilyBudget.Mobile.Behaviors"
              xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              x:DataType="vm:PeriodCloseViewModel"
              x:Class="FamilyBudget.Mobile.Views.PeriodClosePage"
@@ -28,7 +29,9 @@
                                     <Label Text="{Binding WalletName}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
                                     <Label Text="{Binding SystemBalance, Converter={StaticResource MoneyConverter}, StringFormat='Saldo sistem: {0}'}"
                                            FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
-                                    <Entry Text="{Binding CountedBalanceText}" Keyboard="Numeric" Placeholder="Saldo fisik (Rp)" />
+                                    <Entry Text="{Binding CountedBalanceText}" Keyboard="Numeric" Placeholder="Saldo fisik (Rp)">
+                                        <Entry.Behaviors><behaviors:ThousandsSeparatorBehavior AllowNegative="True" /></Entry.Behaviors>
+                                    </Entry>
                                 </VerticalStackLayout>
                             </Border>
                         </DataTemplate>

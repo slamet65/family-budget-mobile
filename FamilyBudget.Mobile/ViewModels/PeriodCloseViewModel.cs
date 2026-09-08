@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
+using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels.Base;
 
 namespace FamilyBudget.Mobile.ViewModels;
@@ -59,7 +60,7 @@ public partial class PeriodCloseViewModel(IApiClient apiClient, IUserFeedbackSer
         var walletBalances = new List<WalletBalanceEntry>();
         foreach (var entry in WalletEntries)
         {
-            if (!long.TryParse(entry.CountedBalanceText, out var counted))
+            if (!NumberInput.TryParseLong(entry.CountedBalanceText, out var counted, allowNegative: true))
             {
                 await feedback.ShowErrorDialogAsync($"Masukkan saldo fisik untuk {entry.WalletName}.");
                 return;

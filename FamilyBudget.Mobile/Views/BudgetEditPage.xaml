@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             xmlns:behaviors="clr-namespace:FamilyBudget.Mobile.Behaviors"
              x:DataType="vm:BudgetEditViewModel"
              x:Class="FamilyBudget.Mobile.Views.BudgetEditPage"
              Title="{Binding PageTitle}"
@@ -22,7 +23,9 @@
 
             <VerticalStackLayout Spacing="4">
                 <Label Text="Jumlah rencana (Rp)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
-                <Entry Text="{Binding PlannedAmountText}" Keyboard="Numeric" Placeholder="0" />
+                <Entry Text="{Binding PlannedAmountText}" Keyboard="Numeric" Placeholder="0">
+                    <Entry.Behaviors><behaviors:ThousandsSeparatorBehavior /></Entry.Behaviors>
+                </Entry>
             </VerticalStackLayout>
 
             <Button Text="Simpan"

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
+using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels.Base;
 
 namespace FamilyBudget.Mobile.ViewModels;
@@ -41,7 +42,7 @@ public partial class SavingFormViewModel(IApiClient apiClient, IUserFeedbackServ
             await feedback.ShowErrorDialogAsync("Masukkan nama tabungan.");
             return;
         }
-        if (!long.TryParse(OpeningBalanceText, out var openingBalance) || openingBalance < 0)
+        if (!NumberInput.TryParseLong(OpeningBalanceText, out var openingBalance) || openingBalance < 0)
         {
             await feedback.ShowErrorDialogAsync("Masukkan saldo awal yang valid.");
             return;

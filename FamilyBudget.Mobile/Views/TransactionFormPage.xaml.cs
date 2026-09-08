@@ -17,4 +17,5 @@ public partial class TransactionFormPage : ContentPage
         base.OnAppearing();
         viewModel.LoadCommand.Execute(null);
     }
+
 }

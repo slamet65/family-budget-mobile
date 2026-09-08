@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels" xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:behaviors="clr-namespace:FamilyBudget.Mobile.Behaviors"
              x:DataType="vm:SavingFormViewModel" x:Class="FamilyBudget.Mobile.Views.SavingFormPage"
              Title="{Binding PageTitle}" BackgroundColor="{StaticResource Surface}">
     <ScrollView>
@@ -15,7 +16,9 @@
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Saldo awal (Rp)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
-                <Entry Text="{Binding OpeningBalanceText}" Keyboard="Numeric" />
+                <Entry Text="{Binding OpeningBalanceText}" Keyboard="Numeric">
+                    <Entry.Behaviors><behaviors:ThousandsSeparatorBehavior /></Entry.Behaviors>
+                </Entry>
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4">
                 <Label Text="Tanggal saldo awal" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />

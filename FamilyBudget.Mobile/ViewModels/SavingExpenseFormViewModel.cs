@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
+using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels.Base;
 
 namespace FamilyBudget.Mobile.ViewModels;
@@ -36,7 +37,7 @@ public partial class SavingExpenseFormViewModel(IApiClient apiClient, IUserFeedb
     [RelayCommand]
     private Task SaveAsync() => ExecuteSafelyAsync(async () =>
     {
-        if (!long.TryParse(AmountText, out var amount) || amount <= 0)
+        if (!NumberInput.TryParseLong(AmountText, out var amount) || amount <= 0)
         {
             await feedback.ShowErrorDialogAsync("Masukkan jumlah yang valid.");
             return;
