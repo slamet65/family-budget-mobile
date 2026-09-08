@@ -8,6 +8,8 @@ public record BudgetDto(
     string PeriodName,
     int CategoryId,
     string CategoryName,
+    int? SavingId,
+    string? SavingName,
     long PlannedAmount,
     long ActualAmount,
     long RemainingAmount,

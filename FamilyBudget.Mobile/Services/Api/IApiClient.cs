@@ -16,6 +16,26 @@ public partial interface IApiClient
 
     Task<CategoryDto> CreateCategoryAsync(CreateCategoryRequest request, CancellationToken ct = default);
 
+    Task<CategoryDto> UpdateCategoryAsync(int id, UpdateCategoryRequest request, CancellationToken ct = default);
+
+    Task<List<SavingDto>> GetSavingsAsync(CancellationToken ct = default);
+
+    Task<SavingDetailDto> GetSavingAsync(int id, CancellationToken ct = default);
+
+    Task<SavingDto> CreateSavingAsync(CreateSavingRequest request, CancellationToken ct = default);
+
+    Task<SavingDetailDto> UpdateSavingAsync(int id, UpdateSavingRequest request, CancellationToken ct = default);
+
+    Task<List<SavingTransactionDto>> GetSavingTransactionsAsync(int savingId, CancellationToken ct = default);
+
+    Task<SavingTransactionDto> GetSavingTransactionAsync(int id, CancellationToken ct = default);
+
+    Task<SavingTransactionDto> CreateSavingExpenseAsync(int savingId, CreateSavingExpenseRequest request, CancellationToken ct = default);
+
+    Task<SavingTransactionDto> UpdateSavingExpenseAsync(int id, CreateSavingExpenseRequest request, CancellationToken ct = default);
+
+    Task DeleteSavingExpenseAsync(int id, CancellationToken ct = default);
+
     Task<List<PeriodDto>> GetPeriodsAsync(CancellationToken ct = default);
 
     Task<PeriodDto> CreatePeriodAsync(CreatePeriodRequest request, CancellationToken ct = default);
@@ -37,6 +57,8 @@ public partial interface IApiClient
     Task<TransactionDto> UpdateExpenseAsync(int id, CreateExpenseRequest request, CancellationToken ct = default);
 
     Task<TransactionDto> UpdateTransferAsync(int id, CreateTransferRequest request, CancellationToken ct = default);
+
+    Task DeleteTransactionAsync(int id, CancellationToken ct = default);
 
     Task<List<BudgetDto>> GetBudgetsAsync(int periodId, CancellationToken ct = default);
 

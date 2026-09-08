@@ -9,4 +9,7 @@ public partial class ApiClient
 
     public Task<CategoryDto> CreateCategoryAsync(CreateCategoryRequest request, CancellationToken ct = default) =>
         SendAsync<CategoryDto>(HttpMethod.Post, "/categories", request, ct);
+
+    public Task<CategoryDto> UpdateCategoryAsync(int id, UpdateCategoryRequest request, CancellationToken ct = default) =>
+        SendAsync<CategoryDto>(HttpMethod.Put, $"/categories/{id}", request, ct);
 }

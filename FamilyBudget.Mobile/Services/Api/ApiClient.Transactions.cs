@@ -44,4 +44,7 @@ public partial class ApiClient
 
     public Task<TransactionDto> UpdateTransferAsync(int id, CreateTransferRequest request, CancellationToken ct = default) =>
         SendAsync<TransactionDto>(HttpMethod.Put, $"/transactions/{id}", request, ct);
+
+    public Task DeleteTransactionAsync(int id, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, $"/transactions/{id}", null, ct);
 }

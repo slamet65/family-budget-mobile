@@ -27,6 +27,10 @@
         <ShellContent ContentTemplate="{DataTemplate views:TransactionsPage}" />
     </FlyoutItem>
 
+    <FlyoutItem Title="Tabungan" Route="savings">
+        <ShellContent ContentTemplate="{DataTemplate views:SavingsPage}" />
+    </FlyoutItem>
+
     <FlyoutItem Title="Anggaran" Route="budgets">
         <ShellContent ContentTemplate="{DataTemplate views:BudgetsPage}" />
     </FlyoutItem>

@@ -79,6 +79,18 @@ public static class MauiProgram
 		services.AddTransient<TransactionFormPage>();
 		services.AddTransient<TransactionFormViewModel>();
 
+		services.AddTransient<SavingsPage>();
+		services.AddTransient<SavingsViewModel>();
+
+		services.AddTransient<SavingFormPage>();
+		services.AddTransient<SavingFormViewModel>();
+
+		services.AddTransient<SavingDetailPage>();
+		services.AddTransient<SavingDetailViewModel>();
+
+		services.AddTransient<SavingExpenseFormPage>();
+		services.AddTransient<SavingExpenseFormViewModel>();
+
 		services.AddTransient<BudgetsPage>();
 		services.AddTransient<BudgetsViewModel>();
 

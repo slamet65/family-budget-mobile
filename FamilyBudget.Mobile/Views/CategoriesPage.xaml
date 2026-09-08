@@ -18,12 +18,23 @@
             </CollectionView.EmptyView>
             <CollectionView.GroupHeaderTemplate>
                 <DataTemplate x:DataType="vm:CategoryGroup">
-                    <Label Text="{Binding Name}" FontAttributes="Bold" Margin="0,16,0,4" />
+                    <Label Text="{Binding Name}" FontAttributes="Bold" Margin="0,16,0,4">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCategoryTapped" CommandParameter="{Binding Parent}" />
+                        </Label.GestureRecognizers>
+                    </Label>
                 </DataTemplate>
             </CollectionView.GroupHeaderTemplate>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="dtos:CategoryDto">
-                    <Label Text="{Binding Name}" Padding="16,8,0,8" />
+                    <Grid Padding="16,8,0,8" RowDefinitions="Auto,Auto">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCategoryTapped" CommandParameter="{Binding .}" />
+                        </Grid.GestureRecognizers>
+                        <Label Text="{Binding Name}" />
+                        <Label Grid.Row="1" Text="{Binding SavingName, StringFormat='Tabungan: {0}'}"
+                               FontSize="11" TextColor="{StaticResource Primary}" IsVisible="{Binding HasSaving}" />
+                    </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>

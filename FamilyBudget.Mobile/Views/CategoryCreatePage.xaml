@@ -4,7 +4,7 @@
              xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
              x:DataType="vm:CategoryCreateViewModel"
              x:Class="FamilyBudget.Mobile.Views.CategoryCreatePage"
-             Title="Kategori Baru"
+             Title="{Binding PageTitle}"
              BackgroundColor="{StaticResource Surface}">
 
     <ScrollView>
@@ -24,6 +24,17 @@
                 <CheckBox IsChecked="{Binding IsCatchAll}" />
                 <Label Text="Ini kategori &quot;Lain-lain&quot; (anggaran otomatis)" VerticalOptions="Center" TextColor="{StaticResource OnSurface}" />
             </HorizontalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Tabungan" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding SavingOptions}"
+                        ItemDisplayBinding="{Binding Label}"
+                        SelectedItem="{Binding SelectedSaving}"
+                        IsEnabled="{Binding CanMapToSaving}" />
+                <Label Text="Kategori yang memiliki subkategori tidak dapat dihubungkan ke tabungan."
+                       FontSize="12" TextColor="{StaticResource OnSurfaceVariant}"
+                       IsVisible="{Binding HasChildren}" />
+            </VerticalStackLayout>
 
             <Button Text="Simpan"
                     Command="{Binding SaveCommand}"

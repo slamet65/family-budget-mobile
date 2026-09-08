@@ -21,7 +21,7 @@ public partial class CategoriesViewModel(IApiClient apiClient, IUserFeedbackServ
         foreach (var parent in topLevel)
         {
             var children = categories.Where(c => c.ParentId == parent.Id).OrderBy(c => c.Name).ToList();
-            Groups.Add(new CategoryGroup(parent.Name, children.Count > 0 ? children : [parent]));
+            Groups.Add(new CategoryGroup(parent, children.Count > 0 ? children : [parent]));
         }
     });
 }

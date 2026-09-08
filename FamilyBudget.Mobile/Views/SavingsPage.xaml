@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels"
+             xmlns:dtos="clr-namespace:FamilyBudget.Mobile.Services.Api.Dtos"
+             x:DataType="vm:SavingsViewModel"
+             x:Class="FamilyBudget.Mobile.Views.SavingsPage"
+             Title="Tabungan" BackgroundColor="{StaticResource Surface}">
+    <Grid>
+        <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding LoadCommand}">
+            <ScrollView>
+                <VerticalStackLayout Padding="16,4,16,90" Spacing="0">
+                    <Border StrokeShape="RoundRectangle 28" Stroke="Transparent"
+                            BackgroundColor="{StaticResource PrimaryContainer}" Padding="22" Margin="0,0,0,22">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Total saldo tabungan" FontSize="14" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.8" />
+                            <Label Text="{Binding TotalBalance, Converter={StaticResource MoneyConverter}}"
+                                   FontSize="31" FontAttributes="Bold" TextColor="{StaticResource OnPrimaryContainer}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <CollectionView ItemsSource="{Binding Savings}">
+                        <CollectionView.EmptyView>
+                            <Label Text="Belum ada tabungan." HorizontalOptions="Center" Margin="0,20" TextColor="{StaticResource OnSurfaceVariant}" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="dtos:SavingDto">
+                                <Border StrokeShape="RoundRectangle 20" Stroke="Transparent"
+                                        BackgroundColor="{StaticResource SurfaceContainer}" Padding="16" Margin="0,0,0,12">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnSavingTapped" CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+                                        <Border WidthRequest="50" HeightRequest="50" StrokeShape="RoundRectangle 16"
+                                                Stroke="Transparent" BackgroundColor="{StaticResource SecondaryContainer}">
+                                            <Label Text="{Binding Initials}" FontFamily="OpenSansSemibold" FontSize="16"
+                                                   HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource OnSecondaryContainer}" />
+                                        </Border>
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                                            <Label Text="{Binding Name}" FontSize="15" TextColor="{StaticResource OnSurface}" />
+                                            <Label Text="{Binding Note}" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="2" Text="{Binding Balance, Converter={StaticResource MoneyConverter}}"
+                                               FontSize="16" FontAttributes="Bold" VerticalOptions="Center" TextColor="{StaticResource OnSurface}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+        <Border WidthRequest="58" HeightRequest="58" StrokeShape="RoundRectangle 18" Stroke="Transparent"
+                BackgroundColor="{StaticResource PrimaryContainer}" HorizontalOptions="End" VerticalOptions="End" Margin="0,0,20,20">
+            <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnAddSavingTapped" /></Border.GestureRecognizers>
+            <Label Text="+" FontSize="29" TextColor="{StaticResource OnPrimaryContainer}" HorizontalOptions="Center" VerticalOptions="Center" />
+        </Border>
+    </Grid>
+</ContentPage>

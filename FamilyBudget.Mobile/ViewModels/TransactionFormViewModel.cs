@@ -70,6 +70,10 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
             var label = category.ParentId is { } parentId
                 ? $"{categories.FirstOrDefault(c => c.Id == parentId)?.Name} > {category.Name}"
                 : category.Name;
+            if (category.SavingName is { Length: > 0 } savingName)
+            {
+                label += $" · Tabungan {savingName}";
+            }
             CategoryOptions.Add(new CategoryPickerOption(category.Id, label));
         }
 
@@ -147,6 +151,17 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
                 return;
         }
 
+        await Shell.Current.GoToAsync("..");
+    });
+
+    [RelayCommand]
+    private Task DeleteAsync() => ExecuteSafelyAsync(async () =>
+    {
+        if (!IsEditMode) return;
+        var confirmed = await feedback.ShowConfirmationAsync(
+            "Hapus transaksi", "Transaksi ini akan dihapus. Deposit tabungan terkait juga akan disesuaikan.", "Hapus", "Batal");
+        if (!confirmed) return;
+        await apiClient.DeleteTransactionAsync(int.Parse(TransactionIdRaw!));
         await Shell.Current.GoToAsync("..");
     });
 }
