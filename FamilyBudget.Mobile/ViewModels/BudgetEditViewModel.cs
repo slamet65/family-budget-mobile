@@ -6,6 +6,7 @@ using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
 using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels.Base;
+using FamilyBudget.Mobile.Services.Local;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
@@ -13,7 +14,8 @@ namespace FamilyBudget.Mobile.ViewModels;
 [QueryProperty(nameof(CategoryIdRaw), "categoryId")]
 [QueryProperty(nameof(CategoryDisplayName), "categoryName")]
 [QueryProperty(nameof(InitialPlannedAmountRaw), "plannedAmount")]
-public partial class BudgetEditViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class BudgetEditViewModel(IApiClient apiClient, IReferenceDataRepository references,
+    IDomainRepository domain, IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     public ObservableCollection<CategoryPickerOption> AvailableCategories { get; } = [];
 
@@ -57,8 +59,8 @@ public partial class BudgetEditViewModel(IApiClient apiClient, IUserFeedbackServ
             return;
         }
 
-        var categories = await apiClient.GetCategoriesAsync();
-        var existingBudgets = await apiClient.GetBudgetsAsync(PeriodId);
+        var categories = await references.GetCachedCategoriesAsync();
+        var existingBudgets = await domain.GetBudgetsAsync(PeriodId);
         var budgetedCategoryIds = existingBudgets.Select(b => b.CategoryId).ToHashSet();
 
         // The catch-all ("Lain-lain") category's budget is derived server-side and can't be

@@ -13,6 +13,8 @@ public class TransactionIconConverter : IValueConverter
             "expense" => IconGlyphs.CallMade,
             "transfer" => IconGlyphs.SwapHoriz,
             "adjustment" => IconGlyphs.Balance,
+            "saving_deposit" => IconGlyphs.Savings,
+            "saving_withdrawal" => IconGlyphs.Savings,
             _ => IconGlyphs.RadioButtonUnchecked,
         };
 

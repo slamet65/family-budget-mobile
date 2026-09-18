@@ -5,11 +5,13 @@ using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
 using FamilyBudget.Mobile.ViewModels.Base;
+using FamilyBudget.Mobile.Services.Local;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
 [QueryProperty(nameof(CategoryIdRaw), "categoryId")]
-public partial class CategoryCreateViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDataRepository references,
+    IDomainRepository domain, IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     private static readonly ParentCategoryOption NoParent = new(null, "Tidak ada (kategori utama)");
     private static readonly SavingOption NoSaving = new(null, "Bukan kategori tabungan");
@@ -50,7 +52,7 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IUserFeedback
         OnPropertyChanged(nameof(IsEditMode));
         OnPropertyChanged(nameof(PageTitle));
 
-        var categories = await apiClient.GetCategoriesAsync();
+        var categories = await references.GetCachedCategoriesAsync();
         var current = IsEditMode ? categories.FirstOrDefault(c => c.Id == int.Parse(CategoryIdRaw!)) : null;
 
         ParentOptions.Clear();
@@ -64,7 +66,7 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IUserFeedback
 
         SavingOptions.Clear();
         SavingOptions.Add(NoSaving);
-        foreach (var saving in await apiClient.GetSavingsAsync())
+        foreach (var saving in await domain.GetSavingsAsync())
         {
             SavingOptions.Add(new SavingOption(saving.Id, saving.Name));
         }

@@ -5,11 +5,13 @@ using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
 using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels.Base;
+using FamilyBudget.Mobile.Services.Local;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
 [QueryProperty(nameof(SavingIdRaw), "savingId")]
-public partial class SavingFormViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class SavingFormViewModel(IApiClient apiClient, IDomainRepository repository,
+    IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     [ObservableProperty] private string? savingIdRaw;
     [ObservableProperty] private string name = string.Empty;
@@ -27,7 +29,12 @@ public partial class SavingFormViewModel(IApiClient apiClient, IUserFeedbackServ
         OnPropertyChanged(nameof(PageTitle));
         if (!IsEditMode) return;
 
-        var saving = await apiClient.GetSavingAsync(int.Parse(SavingIdRaw!));
+        var saving = await repository.GetSavingAsync(int.Parse(SavingIdRaw!));
+        if (saving is null)
+        {
+            await feedback.ShowErrorDialogAsync("Data tabungan belum tersedia di perangkat.");
+            return;
+        }
         Name = saving.Name;
         Note = saving.Note;
         OpeningBalanceText = saving.OpeningBalance.ToString();

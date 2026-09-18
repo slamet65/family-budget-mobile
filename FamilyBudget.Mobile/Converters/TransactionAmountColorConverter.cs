@@ -10,8 +10,8 @@ public class TransactionAmountColorConverter : IValueConverter
         var resources = Application.Current!.Resources;
         return (value as TransactionDto)?.Type switch
         {
-            "income" => resources["Success"],
-            "expense" => resources["Error"],
+            "income" or "saving_withdrawal" => resources["Success"],
+            "expense" or "saving_deposit" => resources["Error"],
             _ => resources["OnSurface"],
         };
     }

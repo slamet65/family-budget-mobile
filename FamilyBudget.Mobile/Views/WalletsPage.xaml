@@ -21,6 +21,7 @@
                                 Margin="0,0,0,22">
                             <VerticalStackLayout Spacing="6">
                                 <Label Text="Total saldo keluarga" FontSize="14" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.8" />
+                                <Label Text="{Binding CacheStatusText}" FontSize="12" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.8" />
                                 <Label Text="{Binding TotalBalance, Converter={StaticResource MoneyConverter}}"
                                        FontSize="31" FontAttributes="Bold" TextColor="{StaticResource OnPrimaryContainer}" />
                                 <HorizontalStackLayout Spacing="7" Margin="0,7,0,0">
@@ -29,6 +30,12 @@
                                             VerticalOptions="Center" />
                                     <Label Text="{Binding PeriodStatusText}" FontSize="13" TextColor="{StaticResource OnPrimaryContainer}" />
                                 </HorizontalStackLayout>
+                                <Button Text="Sinkronkan ulang"
+                                        Command="{Binding ForceFullResyncCommand}"
+                                        HorizontalOptions="Start"
+                                        Padding="10,5"
+                                        Margin="0,5,0,0"
+                                        FontSize="11" />
                             </VerticalStackLayout>
                         </Border>
 

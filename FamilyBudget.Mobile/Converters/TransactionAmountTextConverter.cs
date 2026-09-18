@@ -16,8 +16,8 @@ public class TransactionAmountTextConverter : IValueConverter
 
         var sign = transaction.Type switch
         {
-            "income" => "+",
-            "expense" => "-",
+            "income" or "saving_withdrawal" => "+",
+            "expense" or "saving_deposit" => "-",
             _ => string.Empty,
         };
 

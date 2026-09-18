@@ -48,24 +48,72 @@ public record SavingTransactionDto(
     string Type,
     long Amount,
     int? SourceTransactionId,
+    string? TransferGroupId,
     string? SourceCategoryName,
+    int? FromWalletId,
+    string? FromWalletName,
+    int? ToWalletId,
+    string? ToWalletName,
+    int? RelatedSavingId,
+    int? RelatedTransactionId,
+    string? RelatedSavingName,
     string? Note,
     int UserId,
     DateTimeOffset OccurredAt,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt,
+    string? ClientMutationId = null,
+    string? LocalId = null,
+    string SyncStatus = "synced",
+    string? SyncError = null,
+    int Version = 1)
 {
-    public bool IsExpense => Type == "expense";
-    public bool IsReadOnly => !IsExpense;
+    public bool IsSynced => SyncStatus == "synced";
+    public string SyncStatusText => SyncStatus switch
+    {
+        "pending" => "Belum tersinkron",
+        "syncing" => "Sedang disinkronkan",
+        "retry" => "Menunggu koneksi",
+        "failed" => $"Gagal: {SyncError}",
+        _ => string.Empty,
+    };
+    public bool IsOutgoing => Type is "withdrawal" or "expense" or "transfer_out";
+    public bool IsReadOnly => Type == "opening_balance" || (Type == "deposit" && SourceCategoryName is not null);
     public string Description => Type switch
     {
         "opening_balance" => "Saldo awal",
-        "deposit" => $"Pemasukan dari {SourceCategoryName ?? "transaksi anggaran"}",
-        _ => string.IsNullOrWhiteSpace(Note) ? "Pengeluaran tabungan" : Note,
+        "deposit" when SourceCategoryName is not null => $"Alokasi · {SourceCategoryName}",
+        "deposit" => $"Setor dari {FromWalletName ?? "dompet"}",
+        "withdrawal" => $"Tarik ke {ToWalletName ?? "dompet"}",
+        "transfer_in" => $"Transfer dari {RelatedSavingName ?? "tabungan"}",
+        "transfer_out" => $"Transfer ke {RelatedSavingName ?? "tabungan"}",
+        _ => string.IsNullOrWhiteSpace(Note) ? "Pengeluaran langsung" : Note,
     };
-    public string AmountText => $"{(IsExpense ? "−" : "+")} Rp {Amount:N0}";
+    public string Detail => string.IsNullOrWhiteSpace(Note) || Type == "expense" ? string.Empty : Note;
+    public string AmountText => $"{(IsOutgoing ? "−" : "+")} Rp {Amount:N0}";
 }
 
-public record CreateSavingExpenseRequest(long Amount, DateTimeOffset OccurredAt, string? Note)
+public record CreateSavingExpenseRequest(long Amount, DateTimeOffset OccurredAt, string? Note,
+    string? ClientMutationId = null, int? ExpectedVersion = null)
 {
     public string Type => "expense";
 }
+
+public record CreateSavingDepositRequest(int FromWalletId, long Amount, DateTimeOffset OccurredAt, string? Note,
+    string? ClientMutationId = null, int? ExpectedVersion = null)
+{
+    public string Type => "deposit";
+}
+
+public record CreateSavingWithdrawalRequest(int ToWalletId, long Amount, DateTimeOffset OccurredAt, string? Note,
+    string? ClientMutationId = null, int? ExpectedVersion = null)
+{
+    public string Type => "withdrawal";
+}
+
+public record CreateSavingTransferRequest(int ToSavingId, long Amount, DateTimeOffset OccurredAt, string? Note,
+    string? ClientMutationId = null, int? ExpectedVersion = null)
+{
+    public string Type => "transfer";
+}
+
+public record DeleteSavingTransactionRequest(string ClientMutationId, int ExpectedVersion);

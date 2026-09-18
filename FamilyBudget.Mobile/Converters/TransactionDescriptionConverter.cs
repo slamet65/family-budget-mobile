@@ -12,6 +12,8 @@ public class TransactionDescriptionConverter : IValueConverter
             TransactionDto { Type: "expense" } t => $"{t.CategoryName} {(string.IsNullOrEmpty(t.Note) ? "" : "- " + t.Note)}",
             TransactionDto { Type: "transfer" } t => $"{t.FromWalletName} ke {t.ToWalletName}",
             TransactionDto { Type: "adjustment" } t => $"{t.FromWalletName ?? t.ToWalletName} (penyesuaian)",
+            TransactionDto { Type: "saving_deposit" } t => $"Setor tabungan dari {t.FromWalletName}",
+            TransactionDto { Type: "saving_withdrawal" } t => $"Tarik tabungan ke {t.ToWalletName}",
             _ => string.Empty,
         };
 

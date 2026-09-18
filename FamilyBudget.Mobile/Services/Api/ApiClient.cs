@@ -11,8 +11,20 @@ public partial class ApiClient(HttpClient http, SessionExpiredNotifier sessionEx
         HttpMethod method, string uri, object? body, CancellationToken ct)
     {
         using var response = await SendCoreAsync(method, uri, body, ct);
-        var result = await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions.Default, ct);
-        return result!;
+        try
+        {
+            var result = await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions.Default, ct);
+            return result ?? throw new JsonException("The response body was empty.");
+        }
+        catch (JsonException)
+        {
+            // A successful HTTP status with an incompatible payload is still an API failure.
+            // Normalize it so view-model commands show feedback instead of letting an async
+            // exception escape onto Android's synchronization context and terminate the app.
+            throw new ApiException(
+                (int)response.StatusCode,
+                "Respons server tidak sesuai format yang diharapkan. Silakan coba lagi setelah memperbarui aplikasi.");
+        }
     }
 
     private async Task SendAsync(HttpMethod method, string uri, object? body, CancellationToken ct)
@@ -85,7 +97,10 @@ public partial class ApiClient(HttpClient http, SessionExpiredNotifier sessionEx
                     "SAVING_CATEGORY_CANNOT_BE_PARENT" => "Kategori tabungan tidak dapat memiliki subkategori.",
                     "CATCH_ALL_CANNOT_MAP_TO_SAVING" => "Kategori Lain-lain tidak dapat dihubungkan ke tabungan.",
                     "SAVING_NAME_EXISTS" => "Nama tabungan sudah digunakan.",
+                    "SAVING_TRANSFER_SAME_ACCOUNT" => "Tabungan asal dan tujuan transfer harus berbeda.",
+                    "WALLET_NOT_FOUND" => "Dompet yang dipilih tidak ditemukan.",
                     "CLOSED_PERIOD_TRANSACTION" => "Transaksi pada periode yang sudah ditutup tidak dapat diubah.",
+                    "SYNC_CONFLICT" => "Transaksi ini sudah berubah di perangkat lain. Muat ulang data lalu terapkan perubahan Anda kembali.",
                     _ => null,
                 };
                 if (localized is not null) return localized;

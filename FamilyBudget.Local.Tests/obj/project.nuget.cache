@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "dgSpecHash": "1aFbljDu63k=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\alann\\source\\repos-personal\\FamilyBudget\\mobile\\FamilyBudget.Local.Tests\\FamilyBudget.Local.Tests.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\alann\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.0\\microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\alann\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.0\\microsoft.extensions.logging.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\alann\\.nuget\\packages\\sourcegear.sqlite3\\3.53.3\\sourcegear.sqlite3.3.53.3.nupkg.sha512",
+    "C:\\Users\\alann\\.nuget\\packages\\sqlite-net-pcl\\1.11.285\\sqlite-net-pcl.1.11.285.nupkg.sha512",
+    "C:\\Users\\alann\\.nuget\\packages\\sqlitepclraw.core\\3.0.3\\sqlitepclraw.core.3.0.3.nupkg.sha512",
+    "C:\\Users\\alann\\.nuget\\packages\\sqlitepclraw.provider.e_sqlite3\\3.0.3\\sqlitepclraw.provider.e_sqlite3.3.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

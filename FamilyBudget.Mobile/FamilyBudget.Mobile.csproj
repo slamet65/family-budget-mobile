@@ -61,6 +61,7 @@
 		<!-- Pinned above the workload-default $(MauiVersion) (10.0.20); CommunityToolkit.Maui 15.0.0 requires Controls >= 10.0.60. -->
 		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.60" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
 	</ItemGroup>
 
 </Project>

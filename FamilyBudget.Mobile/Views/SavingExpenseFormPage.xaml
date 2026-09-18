@@ -6,6 +6,36 @@
              Title="{Binding PageTitle}" BackgroundColor="{StaticResource Surface}">
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8"
+                  IsEnabled="{Binding IsEditMode, Converter={StaticResource InverseBoolConverter}}">
+                <Button Grid.Row="0" Grid.Column="0" Text="Setor" Command="{Binding SetTypeCommand}" CommandParameter="deposit"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="deposit"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
+                </Button>
+                <Button Grid.Row="0" Grid.Column="1" Text="Tarik" Command="{Binding SetTypeCommand}" CommandParameter="withdrawal"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="withdrawal"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
+                </Button>
+                <Button Grid.Row="1" Grid.Column="0" Text="Pengeluaran" Command="{Binding SetTypeCommand}" CommandParameter="expense"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="expense"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
+                </Button>
+                <Button Grid.Row="1" Grid.Column="1" Text="Transfer" Command="{Binding SetTypeCommand}" CommandParameter="transfer"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="transfer"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
+                </Button>
+            </Grid>
+
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding NeedsWallet}">
+                <Label Text="{Binding WalletLabel}" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding Wallets}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedWallet}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding IsTransfer}">
+                <Label Text="Ke tabungan" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding TargetSavings}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedTargetSaving}" />
+            </VerticalStackLayout>
+
             <VerticalStackLayout Spacing="4">
                 <Label Text="Jumlah (Rp)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
                 <Entry Text="{Binding AmountText}" Keyboard="Numeric" Placeholder="0">

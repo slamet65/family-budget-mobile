@@ -4,6 +4,8 @@ using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Auth;
 using FamilyBudget.Mobile.Services.Feedback;
+using FamilyBudget.Mobile.Services.Local;
+using FamilyBudget.Mobile.Services.Sync;
 using FamilyBudget.Mobile.ViewModels;
 using FamilyBudget.Mobile.Views;
 using Microsoft.Extensions.Logging;
@@ -47,6 +49,14 @@ public static class MauiProgram
 		services.AddSingleton<IAuthService, AuthService>();
 		services.AddSingleton<SessionExpiredNotifier>();
 		services.AddSingleton<IUserFeedbackService, UserFeedbackService>();
+		services.AddSingleton<ILocalDatabase>(_ => new LocalDatabase(
+			Path.Combine(FileSystem.AppDataDirectory, "family-budget-cache.db3")));
+		services.AddSingleton<IReferenceDataRepository, ReferenceDataRepository>();
+		services.AddSingleton<ILedgerRepository, LedgerRepository>();
+		services.AddSingleton<IOutboxSyncService, OutboxSyncService>();
+		services.AddSingleton<INetworkMonitor, MauiNetworkMonitor>();
+		services.AddSingleton<IDomainRepository, DomainRepository>();
+		services.AddSingleton<ISyncCoordinator, SyncCoordinator>();
 
 		services.AddTransient<AuthTokenHandler>();
 		services.AddHttpClient<IApiClient, ApiClient>(client =>

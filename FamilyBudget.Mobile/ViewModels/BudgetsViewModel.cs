@@ -5,10 +5,14 @@ using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
 using FamilyBudget.Mobile.ViewModels.Base;
+using FamilyBudget.Mobile.Services.Local;
+using FamilyBudget.Mobile.Services.Sync;
+using Microsoft.Maui.Networking;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
-public partial class BudgetsViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class BudgetsViewModel(IDomainRepository repository, IReferenceDataRepository references,
+    ISyncCoordinator sync, IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     private bool isLoadingPeriods;
     private int? catchAllCategoryId;
@@ -36,10 +40,17 @@ public partial class BudgetsViewModel(IApiClient apiClient, IUserFeedbackService
     {
         isLoadingPeriods = true;
 
-        var categories = await apiClient.GetCategoriesAsync();
+        var categories = await references.GetCachedCategoriesAsync();
         catchAllCategoryId = categories.FirstOrDefault(c => c.IsCatchAll)?.Id;
 
-        var periods = await apiClient.GetPeriodsAsync();
+        var periods = await references.GetCachedPeriodsAsync();
+        if (Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+        {
+            await sync.SynchronizeAsync();
+            categories = await references.GetCachedCategoriesAsync();
+            periods = await references.GetCachedPeriodsAsync();
+            catchAllCategoryId = categories.FirstOrDefault(c => c.IsCatchAll)?.Id;
+        }
         Periods.Clear();
         foreach (var period in periods)
         {
@@ -71,7 +82,7 @@ public partial class BudgetsViewModel(IApiClient apiClient, IUserFeedbackService
             return;
         }
 
-        var budgets = await apiClient.GetBudgetsAsync(SelectedPeriod.Id);
+        var budgets = await repository.GetBudgetsAsync(SelectedPeriod.Id);
         foreach (var budget in budgets)
         {
             Budgets.Add(new BudgetDisplayItem(budget, budget.CategoryId == catchAllCategoryId));

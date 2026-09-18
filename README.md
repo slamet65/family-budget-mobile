@@ -24,7 +24,9 @@ This app is a client for a companion REST API (a separate Cloudflare Workers pro
 - Typed `HttpClient` (`System.Net.Http.Json`) talking to the backend API, with a `DelegatingHandler` attaching the auth token to every request
 - [CommunityToolkit.Maui](https://learn.microsoft.com/dotnet/communitytoolkit/maui/) for snackbars and other UI extras
 - Material You–inspired visual design, hand-built (no design system package)
-- No local database — the app is online-only and calls the API directly for every screen
+- SQLite local cache via `sqlite-net-pcl` (offline-first rollout in progress). Categories,
+  periods, wallets, and transaction lists are cache-backed; new wallet transactions use a
+  durable offline outbox. Other screens and mutations remain online during later phases.
 
 ## Project structure
 
@@ -37,6 +39,7 @@ FamilyBudget.Mobile/
     Api/                  # Typed API client, request/response DTOs, error handling
     Auth/                 # Token storage, session state
     Feedback/             # Error dialogs / snackbars
+    Local/                # SQLite cache and cache-backed repositories
   ViewModels/             # One per page (CommunityToolkit.Mvvm observable objects)
   Views/                  # One XAML page per ViewModel
   Converters/             # XAML value converters (currency formatting, icons, etc.)
@@ -140,7 +143,42 @@ The savings screens require the companion API version that includes D1 migration
 
 ## Testing
 
-There's no automated test suite for this app (a deliberate simplicity choice for a two-user app). Changes are verified by compiling both C# and source-generated XAML, then manually exercising them against a running API on an emulator or physical device.
+SQLite database and ledger repository regression checks run without an Android device:
+
+```bash
+dotnet run --project FamilyBudget.Local.Tests/FamilyBudget.Local.Tests.csproj
+```
+
+The executable suite exits non-zero on a failed assertion. It covers account isolation,
+query filtering/order, persistence, empty snapshots, transactional rollback and partial
+network refresh failure. UI changes still need Android compile and manual device verification.
+
+### Offline rollout status
+
+- Wallets and Transactions render cached data before refreshing online.
+- Transaction filters query SQLite only, with no extra API request per filter change.
+- A complete ledger refresh fetches wallets, periods and **all** transactions, then commits
+  them together locally. Failed fetches leave the previous snapshot untouched.
+- Refresh is still a full fetch, not incremental sync. Separate list requests are not a
+  server-consistent snapshot; the `/sync/bootstrap` contract planned in phase 4 will fix this.
+- Wallet balances remain the last server-derived values, labelled with the refresh time.
+- Only previously loaded reference data is available offline.
+- Creating income, expense, and wallet transfers is offline-capable. The form atomically writes
+  the local transaction and outbox; one UUID is reused as the server idempotency key.
+- Pending transactions appear in the ledger and estimated wallet balance. Swipe an unsynced row
+  to cancel it; tap a rejected row to inspect the error and retry.
+- Transient failures use bounded exponential backoff and retry when connectivity returns.
+  Permanent validation failures remain visible until retried or cancelled.
+- Tutup buku is blocked while any pending/rejected operation remains. Editing/deleting existing
+  transactions remains online-only until its conflict/versioning phase.
+- A D1-backed change feed supplies a monotonically increasing cursor. The client captures the
+  cursor before its first complete refresh, then commits it locally only after projection refreshes
+  succeed, so concurrent writes and interrupted synchronization are replayable.
+- Categories, Periods, Wallets, Transactions, Savings, saving history, Budgets, and public Family
+  Member data are served from SQLite after bootstrap. Online-only edit forms may still fetch an
+  individual authoritative row before mutation.
+- Incremental sync currently transfers compact invalidation events, then refreshes only affected
+  collection projections. Row-level delta payloads remain a later optimization.
 
 For a faster compile-only verification that skips APK packaging:
 

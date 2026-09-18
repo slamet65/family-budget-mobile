@@ -6,12 +6,14 @@ using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
 using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels.Base;
+using FamilyBudget.Mobile.Services.Sync;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
 [QueryProperty(nameof(PeriodId), "periodId")]
 [QueryProperty(nameof(PeriodDisplayName), "periodName")]
-public partial class PeriodCloseViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class PeriodCloseViewModel(IApiClient apiClient, IOutboxSyncService outbox,
+    IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     public ObservableCollection<WalletCountEntry> WalletEntries { get; } = [];
 
@@ -57,6 +59,14 @@ public partial class PeriodCloseViewModel(IApiClient apiClient, IUserFeedbackSer
     [RelayCommand]
     private async Task ConfirmCloseAsync()
     {
+        await outbox.ProcessPendingAsync();
+        if (await outbox.HasUnresolvedAsync())
+        {
+            await feedback.ShowErrorDialogAsync(
+                "Selesaikan atau batalkan semua transaksi yang belum tersinkron sebelum tutup buku.");
+            return;
+        }
+
         var walletBalances = new List<WalletBalanceEntry>();
         foreach (var entry in WalletEntries)
         {

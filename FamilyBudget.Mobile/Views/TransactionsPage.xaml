@@ -14,6 +14,7 @@
                     <VerticalStackLayout Padding="16,4,16,90" Spacing="0">
 
                         <!-- Filters -->
+                        <Label Text="{Binding CacheStatusText}" FontSize="12" Margin="4,0,0,12" TextColor="{StaticResource OnSurfaceVariant}" />
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="0,0,0,18">
                             <Border Grid.Column="0" StrokeShape="RoundRectangle 16" Stroke="Transparent"
                                     BackgroundColor="{StaticResource SurfaceContainer}" Padding="10,0">
@@ -47,6 +48,15 @@
                             </CollectionView.EmptyView>
                             <CollectionView.ItemTemplate>
                                 <DataTemplate x:DataType="dtos:TransactionDto">
+                                    <SwipeView>
+                                        <SwipeView.RightItems>
+                                            <SwipeItems Mode="Execute">
+                                                <SwipeItem Text="Batalkan lokal"
+                                                           BackgroundColor="{StaticResource Error}"
+                                                           CommandParameter="{Binding .}"
+                                                           Invoked="OnCancelPendingInvoked" />
+                                            </SwipeItems>
+                                        </SwipeView.RightItems>
                                     <Border StrokeShape="RoundRectangle 18"
                                             Stroke="Transparent"
                                             BackgroundColor="{StaticResource SurfaceContainer}"
@@ -71,6 +81,8 @@
                                                        FontSize="14" TextColor="{StaticResource OnSurface}" />
                                                 <Label Text="{Binding OccurredAt, StringFormat='{0:d MMM yyyy}'}"
                                                        FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                                                <Label Text="{Binding SyncStatusText}"
+                                                       FontSize="11" TextColor="{StaticResource Error}" />
                                             </VerticalStackLayout>
                                             <Label Grid.Column="2"
                                                    Text="{Binding ., Converter={StaticResource TransactionAmountTextConverter}}"
@@ -78,6 +90,7 @@
                                                    FontSize="15" FontAttributes="Bold" VerticalOptions="Center" />
                                         </Grid>
                                     </Border>
+                                    </SwipeView>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
                         </CollectionView>

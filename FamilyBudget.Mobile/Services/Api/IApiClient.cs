@@ -30,11 +30,12 @@ public partial interface IApiClient
 
     Task<SavingTransactionDto> GetSavingTransactionAsync(int id, CancellationToken ct = default);
 
-    Task<SavingTransactionDto> CreateSavingExpenseAsync(int savingId, CreateSavingExpenseRequest request, CancellationToken ct = default);
+    Task<SavingTransactionDto> CreateSavingTransactionAsync(int savingId, object request, CancellationToken ct = default);
 
-    Task<SavingTransactionDto> UpdateSavingExpenseAsync(int id, CreateSavingExpenseRequest request, CancellationToken ct = default);
+    Task<SavingTransactionDto> UpdateSavingTransactionAsync(int id, object request, CancellationToken ct = default);
 
-    Task DeleteSavingExpenseAsync(int id, CancellationToken ct = default);
+    Task DeleteSavingTransactionAsync(int id, CancellationToken ct = default);
+    Task DeleteSavingTransactionAsync(int id, DeleteSavingTransactionRequest request, CancellationToken ct = default);
 
     Task<List<PeriodDto>> GetPeriodsAsync(CancellationToken ct = default);
 
@@ -60,6 +61,8 @@ public partial interface IApiClient
 
     Task DeleteTransactionAsync(int id, CancellationToken ct = default);
 
+    Task DeleteTransactionAsync(int id, DeleteTransactionRequest request, CancellationToken ct = default);
+
     Task<List<BudgetDto>> GetBudgetsAsync(int periodId, CancellationToken ct = default);
 
     Task<BudgetUpsertResponseDto> UpsertBudgetAsync(int periodId, int categoryId, UpsertBudgetRequest request, CancellationToken ct = default);
@@ -71,4 +74,6 @@ public partial interface IApiClient
     Task<UserDto> ResetPasswordAsync(int userId, ResetPasswordRequest request, CancellationToken ct = default);
 
     Task<ClosePeriodResponse> ClosePeriodAsync(int periodId, ClosePeriodRequest request, CancellationToken ct = default);
+    Task<SyncBootstrapDto> GetSyncBootstrapAsync(CancellationToken ct = default);
+    Task<SyncChangesDto> GetSyncChangesAsync(long after, CancellationToken ct = default);
 }

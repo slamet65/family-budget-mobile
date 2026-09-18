@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/LocalDatabase*.cs" Link="Local/%(Filename)%(Extension)" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/ILocalDatabase.cs" Link="Local/ILocalDatabase.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/PendingTransactionInput.cs" Link="Local/PendingTransactionInput.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/PendingSavingTransactionInput.cs" Link="Local/PendingSavingTransactionInput.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/DomainSnapshot.cs" Link="Local/DomainSnapshot.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/SyncDiagnostics.cs" Link="Local/SyncDiagnostics.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/Entities/*.cs" Link="Local/Entities/%(Filename)%(Extension)" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Api/Dtos/*.cs" Link="Dtos/%(Filename)%(Extension)" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Api/IApiClient.cs" Link="Api/IApiClient.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Api/ApiException.cs" Link="Api/ApiException.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Common/JsonOptions.cs" Link="Common/JsonOptions.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Common/FlexibleInt64JsonConverter.cs" Link="Common/FlexibleInt64JsonConverter.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Auth/IAuthService.cs" Link="Auth/IAuthService.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/ILedgerRepository.cs" Link="Local/ILedgerRepository.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/IReferenceDataRepository.cs" Link="Local/IReferenceDataRepository.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/IDomainRepository.cs" Link="Local/IDomainRepository.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/LedgerRepository.cs" Link="Local/LedgerRepository.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/DomainRepository.cs" Link="Local/DomainRepository.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Sync/IOutboxSyncService.cs" Link="Sync/IOutboxSyncService.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Sync/INetworkMonitor.cs" Link="Sync/INetworkMonitor.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Sync/OutboxSyncService.cs" Link="Sync/OutboxSyncService.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Sync/ISyncCoordinator.cs" Link="Sync/ISyncCoordinator.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Sync/SyncCoordinator.cs" Link="Sync/SyncCoordinator.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Sync/SyncStatusSnapshot.cs" Link="Sync/SyncStatusSnapshot.cs" />
+  </ItemGroup>
+</Project>

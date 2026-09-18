@@ -5,13 +5,19 @@ using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
 using FamilyBudget.Mobile.Common;
+using FamilyBudget.Mobile.Services.Local;
+using FamilyBudget.Mobile.Services.Sync;
+using Microsoft.Maui.Networking;
 using FamilyBudget.Mobile.ViewModels.Base;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
 [QueryProperty(nameof(TransactionIdRaw), "transactionId")]
-public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class TransactionFormViewModel(ILedgerRepository ledgerRepository,
+    IReferenceDataRepository referenceRepository, IOutboxSyncService outbox,
+    IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
+    private TransactionDto? loadedTransaction;
     public ObservableCollection<WalletDto> Wallets { get; } = [];
 
     public ObservableCollection<CategoryPickerOption> CategoryOptions { get; } = [];
@@ -58,13 +64,25 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
         OnPropertyChanged(nameof(IsEditMode));
         OnPropertyChanged(nameof(PageTitle));
 
+        var wallets = await ledgerRepository.GetWalletsAsync();
+        var categories = await referenceRepository.GetCachedCategoriesAsync();
+        var periods = await ledgerRepository.GetPeriodsAsync();
+        if ((wallets.Count == 0 || categories.Count == 0 || periods.Count == 0)
+            && Connectivity.Current.NetworkAccess == NetworkAccess.Internet)
+        {
+            await ledgerRepository.RefreshAsync();
+            await referenceRepository.RefreshCategoriesAsync();
+            wallets = await ledgerRepository.GetWalletsAsync();
+            categories = await referenceRepository.GetCachedCategoriesAsync();
+            periods = await ledgerRepository.GetPeriodsAsync();
+        }
+
         Wallets.Clear();
-        foreach (var wallet in await apiClient.GetWalletsAsync())
+        foreach (var wallet in wallets)
         {
             Wallets.Add(wallet);
         }
 
-        var categories = await apiClient.GetCategoriesAsync();
         CategoryOptions.Clear();
         foreach (var category in categories)
         {
@@ -78,13 +96,16 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
             CategoryOptions.Add(new CategoryPickerOption(category.Id, label));
         }
 
-        CurrentPeriod = await apiClient.GetCurrentPeriodAsync();
+        CurrentPeriod = periods.FirstOrDefault(period => period.IsOpen);
         HasOpenPeriod = CurrentPeriod is not null;
         OnPropertyChanged(nameof(MinimumOccurredAt));
 
         if (IsEditMode)
         {
-            var transaction = await apiClient.GetTransactionAsync(int.Parse(TransactionIdRaw!));
+            var transaction = await ledgerRepository.GetTransactionAsync(int.Parse(TransactionIdRaw!));
+            if (transaction is null)
+                throw new InvalidOperationException("Transaksi tidak tersedia di cache lokal. Muat ulang data lalu coba lagi.");
+            loadedTransaction = transaction;
             SelectedType = transaction.Type;
             FromWallet = transaction.FromWalletId is { } fromWalletId ? Wallets.FirstOrDefault(w => w.Id == fromWalletId) : null;
             ToWallet = transaction.ToWalletId is { } toWalletId ? Wallets.FirstOrDefault(w => w.Id == toWalletId) : null;
@@ -126,32 +147,48 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
         // shift the date across midnight UTC and wrongly land before the period start.
         var occurredAtUtc = new DateTimeOffset(OccurredAt.Year, OccurredAt.Month, OccurredAt.Day, 0, 0, 0, TimeSpan.Zero);
         var note = string.IsNullOrWhiteSpace(Note) ? null : Note;
-        var id = IsEditMode ? int.Parse(TransactionIdRaw!) : 0;
-
-        switch (SelectedType)
+        var periodId = IsEditMode ? loadedTransaction?.PeriodId : CurrentPeriod?.Id;
+        if (periodId is null)
         {
-            case "income" when ToWallet is not null:
-                var incomeRequest = new CreateIncomeRequest(ToWallet.Id, amount, occurredAtUtc, note);
-                await (IsEditMode ? apiClient.UpdateIncomeAsync(id, incomeRequest) : apiClient.CreateIncomeAsync(incomeRequest));
-                break;
-            case "expense" when FromWallet is not null && SelectedCategoryOption is not null:
-                var expenseRequest = new CreateExpenseRequest(FromWallet.Id, SelectedCategoryOption.Id, amount, occurredAtUtc, note);
-                await (IsEditMode ? apiClient.UpdateExpenseAsync(id, expenseRequest) : apiClient.CreateExpenseAsync(expenseRequest));
-                break;
-            case "transfer" when FromWallet is not null && ToWallet is not null:
-                if (FromWallet.Id == ToWallet.Id)
-                {
-                    await feedback.ShowErrorDialogAsync("Dompet asal dan tujuan harus berbeda.");
-                    return;
-                }
-                var transferRequest = new CreateTransferRequest(FromWallet.Id, ToWallet.Id, amount, occurredAtUtc, note);
-                await (IsEditMode ? apiClient.UpdateTransferAsync(id, transferRequest) : apiClient.CreateTransferAsync(transferRequest));
-                break;
-            default:
-                await feedback.ShowErrorDialogAsync("Lengkapi semua kolom yang wajib diisi.");
-                return;
+            await feedback.ShowErrorDialogAsync("Tidak ada periode aktif di cache. Hubungkan internet dan muat ulang data.");
+            return;
+        }
+        var input = SelectedType switch
+        {
+            "income" when ToWallet is not null => new PendingTransactionInput(periodId.Value, "income",
+                null, null, ToWallet.Id, ToWallet.Name, null, null, amount, note, occurredAtUtc),
+            "expense" when FromWallet is not null && SelectedCategoryOption is not null =>
+                new PendingTransactionInput(periodId.Value, "expense", FromWallet.Id, FromWallet.Name,
+                    null, null, SelectedCategoryOption.Id, SelectedCategoryOption.Label, amount, note, occurredAtUtc),
+            "transfer" when FromWallet is not null && ToWallet is not null && FromWallet.Id != ToWallet.Id =>
+                new PendingTransactionInput(periodId.Value, "transfer", FromWallet.Id, FromWallet.Name,
+                    ToWallet.Id, ToWallet.Name, null, null, amount, note, occurredAtUtc),
+            _ => null,
+        };
+        if (SelectedType == "transfer" && FromWallet?.Id == ToWallet?.Id)
+        {
+            await feedback.ShowErrorDialogAsync("Dompet asal dan tujuan harus berbeda.");
+            return;
+        }
+        if (input is null)
+        {
+            await feedback.ShowErrorDialogAsync("Lengkapi semua kolom yang wajib diisi.");
+            return;
         }
 
+        if (!IsEditMode)
+        {
+            await outbox.EnqueueAsync(input);
+            await Shell.Current.GoToAsync("..");
+            return;
+        }
+
+        if (loadedTransaction is null)
+        {
+            await feedback.ShowErrorDialogAsync("Transaksi tidak tersedia di cache lokal. Muat ulang data lalu coba lagi.");
+            return;
+        }
+        await outbox.EnqueueUpdateAsync(loadedTransaction, input);
         await Shell.Current.GoToAsync("..");
     });
 
@@ -162,7 +199,12 @@ public partial class TransactionFormViewModel(IApiClient apiClient, IUserFeedbac
         var confirmed = await feedback.ShowConfirmationAsync(
             "Hapus transaksi", "Transaksi ini akan dihapus. Deposit tabungan terkait juga akan disesuaikan.", "Hapus", "Batal");
         if (!confirmed) return;
-        await apiClient.DeleteTransactionAsync(int.Parse(TransactionIdRaw!));
+        if (loadedTransaction is null)
+        {
+            await feedback.ShowErrorDialogAsync("Transaksi tidak tersedia di cache lokal. Muat ulang data lalu coba lagi.");
+            return;
+        }
+        await outbox.EnqueueDeleteAsync(loadedTransaction);
         await Shell.Current.GoToAsync("..");
     });
 }

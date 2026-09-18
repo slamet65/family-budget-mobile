@@ -4,11 +4,14 @@ using CommunityToolkit.Mvvm.Input;
 using FamilyBudget.Mobile.Services.Api;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.Services.Feedback;
+using FamilyBudget.Mobile.Services.Local;
+using FamilyBudget.Mobile.Services.Sync;
 using FamilyBudget.Mobile.ViewModels.Base;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
-public partial class PeriodsViewModel(IApiClient apiClient, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class PeriodsViewModel(IReferenceDataRepository repository, ISyncCoordinator sync,
+    IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     public ObservableCollection<PeriodDto> Periods { get; } = [];
 
@@ -16,16 +19,31 @@ public partial class PeriodsViewModel(IApiClient apiClient, IUserFeedbackService
     private bool hasOpenPeriod;
 
     [RelayCommand]
-    private Task LoadAsync() => ExecuteSafelyAsync(async () =>
+    private async Task LoadAsync()
     {
-        var periods = await apiClient.GetPeriodsAsync();
+        var cached = await repository.GetCachedPeriodsAsync();
+        if (cached.Count > 0)
+        {
+            ReplacePeriods(cached);
+        }
+
+        await ExecuteSafelyAsync(async () =>
+        {
+            await sync.SynchronizeAsync();
+            var fresh = await repository.GetCachedPeriodsAsync();
+            ReplacePeriods(fresh);
+        }, background: cached.Count > 0);
+    }
+
+    private void ReplacePeriods(IReadOnlyList<PeriodDto> periods)
+    {
         Periods.Clear();
         foreach (var period in periods)
         {
             Periods.Add(period);
         }
         HasOpenPeriod = periods.Any(p => p.IsOpen);
-    });
+    }
 
     [RelayCommand]
     private async Task ClosePeriodAsync(PeriodDto period)

@@ -28,6 +28,14 @@ public partial class ApiClient
         {
             parameters.Add($"type={Uri.EscapeDataString(type)}");
         }
+        if (query.AfterId is { } afterId)
+        {
+            parameters.Add($"afterId={afterId}");
+        }
+        if (query.Limit is { } limit)
+        {
+            parameters.Add($"limit={limit}");
+        }
 
         var uri = parameters.Count > 0 ? $"/transactions?{string.Join('&', parameters)}" : "/transactions";
         return SendAsync<List<TransactionDto>>(HttpMethod.Get, uri, null, ct);
@@ -47,4 +55,7 @@ public partial class ApiClient
 
     public Task DeleteTransactionAsync(int id, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Delete, $"/transactions/{id}", null, ct);
+
+    public Task DeleteTransactionAsync(int id, DeleteTransactionRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, $"/transactions/{id}", request, ct);
 }
