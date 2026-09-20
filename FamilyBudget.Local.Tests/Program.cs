@@ -190,6 +190,10 @@ Check((await database.GetPendingOutboxAsync(1)).Count == 0
     "successful sync removes outbox and preserves a synced display row");
 Check((await database.GetWalletsAsync(1)).Single().Balance == 1234,
     "synced pending overlay is removed until authoritative refresh arrives");
+await database.ApplyTransactionChangesAsync(1, [wallet with { Balance = 1034 }], [serverRow], []);
+Check((await database.GetTransactionsAsync(1, new(null, null, null)))
+        .Count(row => row.Id == serverRow.Id) == 1,
+    "incremental refresh replaces a completed offline create instead of duplicating it");
 await database.ReplaceLedgerSnapshotAsync(1, [wallet with { Balance = 1034 }], [period], [serverRow]);
 Check((await database.GetTransactionsAsync(1, new(null, null, null))).Single().Id == 55,
     "authoritative refresh replaces the temporary synced row");

@@ -151,13 +151,29 @@ public sealed partial class LocalDatabase
                 LocalId = item.OperationType == "create" ? item.EntityLocalId : null,
                 SyncStatus = "synced", SyncError = null,
             };
+            var previousKey = local.Key;
+            if (item.OperationType == "create")
+            {
+                // Created rows start life under their client UUID. Move them to the same
+                // canonical key used by snapshot/change-feed upserts as soon as the server
+                // assigns an ID; otherwise the next incremental refresh inserts a duplicate.
+                local.Key = CreateKey(item.UserId, serverTransaction.Id);
+            }
             local.ServerId = serverTransaction.Id;
             local.LocalId = display.LocalId;
             local.SyncStatus = "synced";
             local.SyncError = null;
             local.IsDeleted = false;
             local.PayloadJson = JsonSerializer.Serialize(display);
-            connection.Update(local);
+            if (local.Key == previousKey)
+            {
+                connection.Update(local);
+            }
+            else
+            {
+                connection.Delete<LocalTransaction>(previousKey);
+                connection.InsertOrReplace(local);
+            }
             connection.Delete(item);
         });
     }
