@@ -57,20 +57,6 @@ public sealed class OutboxSyncService : IOutboxSyncService
         return transaction;
     }
 
-    public async Task<SavingTransactionDto> EnqueueSavingUpdateAsync(SavingTransactionDto original,
-        PendingSavingTransactionInput input)
-    {
-        var transaction = await database.EnqueueSavingTransactionUpdateAsync(GetUserId(), original, input);
-        TriggerSync();
-        return transaction;
-    }
-
-    public async Task EnqueueSavingDeleteAsync(SavingTransactionDto original)
-    {
-        await database.EnqueueSavingTransactionDeleteAsync(GetUserId(), original);
-        TriggerSync();
-    }
-
     public void TriggerSync() => _ = ProcessPendingSafelyAsync();
 
     private async Task ProcessPendingSafelyAsync()
@@ -175,30 +161,27 @@ public sealed class OutboxSyncService : IOutboxSyncService
         };
     }
 
-    private async Task<SavingTransactionDto?> SendSavingAsync(LocalOutboxItem item,
+    private async Task<SavingTransactionDto> SendSavingAsync(LocalOutboxItem item,
         SavingTransactionDto transaction, CancellationToken ct)
     {
-        if (item.OperationType == "delete")
-        {
-            await api.DeleteSavingTransactionAsync(item.ServerId!.Value,
-                new DeleteSavingTransactionRequest(item.OperationId, item.ExpectedVersion!.Value), ct);
-            return null;
-        }
+        // Update/delete items queued by older app versions can never succeed: the API rejects
+        // them with SAVING_TRANSACTION_IMMUTABLE. Fail them permanently without a request so
+        // the user sees them as rejected and can cancel (which restores the original row).
+        if (item.OperationType != "create")
+            throw new ApiException(400, "Mutasi tabungan tidak dapat diubah atau dihapus. Batalkan perubahan ini, lalu catat mutasi kebalikannya untuk mengoreksi.");
         object request = transaction.Type switch
         {
             "deposit" => new CreateSavingDepositRequest(transaction.FromWalletId!.Value, transaction.Amount,
-                transaction.OccurredAt, transaction.Note, item.OperationId, item.ExpectedVersion),
+                transaction.OccurredAt, transaction.Note, item.OperationId, transaction.FundedCategoryId),
             "withdrawal" => new CreateSavingWithdrawalRequest(transaction.ToWalletId!.Value, transaction.Amount,
-                transaction.OccurredAt, transaction.Note, item.OperationId, item.ExpectedVersion),
+                transaction.OccurredAt, transaction.Note, item.OperationId, transaction.FundedCategoryId),
             "transfer_out" => new CreateSavingTransferRequest(transaction.RelatedSavingId!.Value, transaction.Amount,
-                transaction.OccurredAt, transaction.Note, item.OperationId, item.ExpectedVersion),
+                transaction.OccurredAt, transaction.Note, item.OperationId),
             "expense" => new CreateSavingExpenseRequest(transaction.Amount, transaction.OccurredAt,
-                transaction.Note, item.OperationId, item.ExpectedVersion),
+                transaction.Note, item.OperationId),
             _ => throw new InvalidOperationException($"Unsupported saving outbox type: {transaction.Type}"),
         };
-        return item.OperationType == "update"
-            ? await api.UpdateSavingTransactionAsync(item.ServerId!.Value, request, ct)
-            : await api.CreateSavingTransactionAsync(transaction.SavingId, request, ct);
+        return await api.CreateSavingTransactionAsync(transaction.SavingId, request, ct);
     }
 
     private int GetUserId() => auth.CurrentUser?.Id

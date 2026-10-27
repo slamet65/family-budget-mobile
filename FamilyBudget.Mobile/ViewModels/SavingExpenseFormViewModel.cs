@@ -11,27 +11,29 @@ using FamilyBudget.Mobile.Services.Sync;
 
 namespace FamilyBudget.Mobile.ViewModels;
 
+// Create-only: saving movements are immutable on the API (SAVING_TRANSACTION_IMMUTABLE);
+// corrections are recorded as a new opposite movement.
 [QueryProperty(nameof(SavingIdRaw), "savingId")]
-[QueryProperty(nameof(TransactionIdRaw), "transactionId")]
 [QueryProperty(nameof(TransactionTypeRaw), "type")]
-public partial class SavingExpenseFormViewModel(ILedgerRepository ledger,
-    IDomainRepository domain, IOutboxSyncService outbox, IUserFeedbackService feedback) : ViewModelBase(feedback)
+public partial class SavingExpenseFormViewModel(ILedgerRepository ledger, IDomainRepository domain,
+    IReferenceDataRepository references, IOutboxSyncService outbox, IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
-    private SavingTransactionDto? loadedTransaction;
+    private IReadOnlyList<FundingOption> fundableCategories = [];
+    private IReadOnlyList<BudgetDto> openPeriodBudgets = [];
     public ObservableCollection<WalletDto> Wallets { get; } = [];
     public ObservableCollection<SavingDto> TargetSavings { get; } = [];
+    public ObservableCollection<FundingOption> FundingOptions { get; } = [];
 
     [ObservableProperty] private string? savingIdRaw;
-    [ObservableProperty] private string? transactionIdRaw;
     [ObservableProperty] private string? transactionTypeRaw;
     [ObservableProperty] private string selectedType = "expense";
     [ObservableProperty] private WalletDto? selectedWallet;
     [ObservableProperty] private SavingDto? selectedTargetSaving;
+    [ObservableProperty] private FundingOption? selectedFunding;
     [ObservableProperty] private string amountText = string.Empty;
     [ObservableProperty] private DateTime occurredAt = DateTime.Today;
     [ObservableProperty] private string? note;
 
-    public bool IsEditMode => int.TryParse(TransactionIdRaw, out _);
     public bool IsDeposit => SelectedType == "deposit";
     public bool IsWithdrawal => SelectedType == "withdrawal";
     public bool IsExpense => SelectedType == "expense";
@@ -45,15 +47,25 @@ public partial class SavingExpenseFormViewModel(ILedgerRepository ledger,
         "transfer" => "Transfer Tabungan",
         _ => "Pengeluaran Tabungan",
     };
-    public string PageTitle => IsEditMode ? $"Ubah {TypeLabel}" : TypeLabel;
+    public string FundingLabel => IsDeposit ? "Kembalikan sisa anggaran" : "Dipakai untuk anggaran";
+    public string FundingHint => (IsDeposit, SelectedFunding?.CategoryName) switch
+    {
+        (false, null) => "Dianggap pinjaman: anggaran tidak berubah. Kembalikan nanti lewat Setor.",
+        (false, var name) => $"Anggaran {name} periode ini bertambah sebesar jumlah ini.",
+        (true, null) => "Setoran biasa atau bayar pinjaman: anggaran tidak berubah.",
+        (true, var name) => $"Dana dari tabungan untuk {name} periode ini berkurang sebesar jumlah ini.",
+    };
 
-    partial void OnSelectedTypeChanged(string value) => NotifyTypeProperties();
+    partial void OnSelectedTypeChanged(string value)
+    {
+        NotifyTypeProperties();
+        RebuildFundingOptions(SelectedFunding?.CategoryId);
+    }
+
+    partial void OnSelectedFundingChanged(FundingOption? value) => OnPropertyChanged(nameof(FundingHint));
 
     [RelayCommand]
-    private void SetType(string type)
-    {
-        if (!IsEditMode) SelectedType = type;
-    }
+    private void SetType(string type) => SelectedType = type;
 
     [RelayCommand]
     private Task LoadAsync() => ExecuteSafelyAsync(async () =>
@@ -61,46 +73,46 @@ public partial class SavingExpenseFormViewModel(ILedgerRepository ledger,
         Wallets.Clear();
         foreach (var wallet in await ledger.GetWalletsAsync()) Wallets.Add(wallet);
 
+        // Saving-mapped categories can't be funded from a saving (the API rejects it).
+        var categories = await references.GetCachedCategoriesAsync();
+        fundableCategories = categories
+            .Where(category => category.SavingId is null)
+            .Select(category => new FundingOption(category.Id, category.Name, category.ParentId is { } parentId
+                ? $"{categories.FirstOrDefault(c => c.Id == parentId)?.Name} > {category.Name}"
+                : category.Name))
+            .ToList();
+        var openPeriod = (await ledger.GetPeriodsAsync()).FirstOrDefault(period => period.IsOpen);
+        openPeriodBudgets = openPeriod is null ? [] : await domain.GetBudgetsAsync(openPeriod.Id);
+
         var savings = await domain.GetSavingsAsync();
-        SavingTransactionDto? transaction = null;
-        if (IsEditMode)
-        {
-            transaction = await domain.GetSavingTransactionAsync(int.Parse(TransactionIdRaw!));
-            if (transaction is null)
-                throw new InvalidOperationException("Transaksi tabungan tidak tersedia di cache lokal.");
-            loadedTransaction = transaction;
-            SelectedType = transaction.Type switch
-            {
-                "transfer_in" or "transfer_out" => "transfer",
-                _ => transaction.Type,
-            };
-            SavingIdRaw = transaction.Type == "transfer_in"
-                ? transaction.RelatedSavingId?.ToString()
-                : transaction.SavingId.ToString();
-        }
-        else if (!string.IsNullOrWhiteSpace(TransactionTypeRaw))
-        {
+        if (!string.IsNullOrWhiteSpace(TransactionTypeRaw))
             SelectedType = TransactionTypeRaw;
-        }
 
         var savingId = int.TryParse(SavingIdRaw, out var parsedSavingId) ? parsedSavingId : 0;
         TargetSavings.Clear();
         foreach (var saving in savings.Where(s => s.Id != savingId)) TargetSavings.Add(saving);
 
-        if (transaction is not null)
-        {
-            SelectedWallet = transaction.Type == "deposit"
-                ? Wallets.FirstOrDefault(w => w.Id == transaction.FromWalletId)
-                : Wallets.FirstOrDefault(w => w.Id == transaction.ToWalletId);
-            var targetId = transaction.Type == "transfer_in" ? transaction.SavingId : transaction.RelatedSavingId;
-            SelectedTargetSaving = TargetSavings.FirstOrDefault(s => s.Id == targetId);
-            AmountText = transaction.Amount.ToString();
-            OccurredAt = transaction.OccurredAt.UtcDateTime.Date;
-            Note = transaction.Note;
-        }
-
         NotifyTypeProperties();
+        RebuildFundingOptions(null);
     });
+
+    // Withdrawal: any fundable category. Deposit: only categories that currently hold
+    // savings funding this period, since returning more than that is rejected by the API.
+    private void RebuildFundingOptions(int? keepCategoryId)
+    {
+        FundingOptions.Clear();
+        FundingOptions.Add(new FundingOption(null, null,
+            IsDeposit ? "Setor biasa / bayar pinjaman" : "Pinjam, dikembalikan nanti"));
+        var options = IsDeposit
+            ? openPeriodBudgets
+                .Where(budget => budget.FundedAmount > 0)
+                .Select(budget => new FundingOption(budget.CategoryId, budget.CategoryName,
+                    $"{budget.CategoryName} · dana tabungan Rp {budget.FundedAmount:N0}"))
+            : fundableCategories;
+        foreach (var option in options) FundingOptions.Add(option);
+
+        SelectedFunding = FundingOptions.FirstOrDefault(option => option.CategoryId == keepCategoryId) ?? FundingOptions[0];
+    }
 
     [RelayCommand]
     private Task SaveAsync() => ExecuteSafelyAsync(async () =>
@@ -134,28 +146,11 @@ public partial class SavingExpenseFormViewModel(ILedgerRepository ledger,
             IsTransfer ? SelectedTargetSaving?.Id : null,
             IsTransfer ? SelectedTargetSaving?.Name : null,
             note,
-            date);
+            date,
+            NeedsWallet ? SelectedFunding?.CategoryId : null,
+            NeedsWallet ? SelectedFunding?.CategoryName : null);
 
-        if (IsEditMode)
-        {
-            if (loadedTransaction is null) throw new InvalidOperationException("Transaksi tabungan tidak tersedia di cache lokal.");
-            await outbox.EnqueueSavingUpdateAsync(loadedTransaction, input);
-        }
-        else
-            await outbox.EnqueueSavingAsync(input);
-
-        await Shell.Current.GoToAsync("..");
-    });
-
-    [RelayCommand]
-    private Task DeleteAsync() => ExecuteSafelyAsync(async () =>
-    {
-        if (!IsEditMode) return;
-        var confirmed = await feedback.ShowConfirmationAsync(
-            "Hapus transaksi", "Transaksi tabungan dan mutasi dompet terkait akan dihapus.", "Hapus", "Batal");
-        if (!confirmed) return;
-        if (loadedTransaction is null) throw new InvalidOperationException("Transaksi tabungan tidak tersedia di cache lokal.");
-        await outbox.EnqueueSavingDeleteAsync(loadedTransaction);
+        await outbox.EnqueueSavingAsync(input);
         await Shell.Current.GoToAsync("..");
     });
 
@@ -168,7 +163,7 @@ public partial class SavingExpenseFormViewModel(ILedgerRepository ledger,
         OnPropertyChanged(nameof(NeedsWallet));
         OnPropertyChanged(nameof(WalletLabel));
         OnPropertyChanged(nameof(TypeLabel));
-        OnPropertyChanged(nameof(PageTitle));
-        OnPropertyChanged(nameof(IsEditMode));
+        OnPropertyChanged(nameof(FundingLabel));
+        OnPropertyChanged(nameof(FundingHint));
     }
 }

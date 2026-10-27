@@ -8,4 +8,5 @@ namespace FamilyBudget.Mobile.ViewModels;
 public record BudgetDisplayItem(BudgetDto Budget, bool IsCatchAll)
 {
     public bool HasSaving => Budget.SavingId is not null;
+    public bool HasFunding => Budget.FundedAmount != 0;
 }

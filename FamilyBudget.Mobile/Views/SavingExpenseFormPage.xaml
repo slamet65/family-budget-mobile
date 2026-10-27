@@ -3,11 +3,10 @@
              xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels" xmlns:sys="clr-namespace:System;assembly=System.Runtime"
              xmlns:behaviors="clr-namespace:FamilyBudget.Mobile.Behaviors"
              x:DataType="vm:SavingExpenseFormViewModel" x:Class="FamilyBudget.Mobile.Views.SavingExpenseFormPage"
-             Title="{Binding PageTitle}" BackgroundColor="{StaticResource Surface}">
+             Title="{Binding TypeLabel}" BackgroundColor="{StaticResource Surface}">
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8"
-                  IsEnabled="{Binding IsEditMode, Converter={StaticResource InverseBoolConverter}}">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
                 <Button Grid.Row="0" Grid.Column="0" Text="Setor" Command="{Binding SetTypeCommand}" CommandParameter="deposit"
                         BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
                     <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="deposit"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
@@ -31,6 +30,12 @@
                 <Picker ItemsSource="{Binding Wallets}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedWallet}" />
             </VerticalStackLayout>
 
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding NeedsWallet}">
+                <Label Text="{Binding FundingLabel}" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding FundingOptions}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedFunding}" />
+                <Label Text="{Binding FundingHint}" FontSize="11" TextColor="{StaticResource OnSurfaceVariant}" />
+            </VerticalStackLayout>
+
             <VerticalStackLayout Spacing="4" IsVisible="{Binding IsTransfer}">
                 <Label Text="Ke tabungan" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
                 <Picker ItemsSource="{Binding TargetSavings}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedTargetSaving}" />
@@ -44,9 +49,7 @@
             </VerticalStackLayout>
             <VerticalStackLayout Spacing="4"><Label Text="Tanggal" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" /><DatePicker Date="{Binding OccurredAt}" MaximumDate="{x:Static sys:DateTime.Today}" /></VerticalStackLayout>
             <VerticalStackLayout Spacing="4"><Label Text="Catatan (opsional)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" /><Editor Text="{Binding Note}" AutoSize="TextChanges" /></VerticalStackLayout>
-            <Button Text="Simpan" Command="{Binding SaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Margin="0,10,0,0" />
-            <Button Text="Hapus" Command="{Binding DeleteCommand}" IsVisible="{Binding IsEditMode}" BackgroundColor="{StaticResource Error}" TextColor="White" />
-            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+            <Button Text="Simpan" Command="{Binding SaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Margin="0,10,0,0" />            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

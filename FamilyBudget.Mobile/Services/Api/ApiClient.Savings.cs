@@ -24,13 +24,4 @@ public partial class ApiClient
 
     public Task<SavingTransactionDto> CreateSavingTransactionAsync(int savingId, object request, CancellationToken ct = default) =>
         SendAsync<SavingTransactionDto>(HttpMethod.Post, $"/savings/{savingId}/transactions", request, ct);
-
-    public Task<SavingTransactionDto> UpdateSavingTransactionAsync(int id, object request, CancellationToken ct = default) =>
-        SendAsync<SavingTransactionDto>(HttpMethod.Put, $"/saving-transactions/{id}", request, ct);
-
-    public Task DeleteSavingTransactionAsync(int id, CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Delete, $"/saving-transactions/{id}", null, ct);
-
-    public Task DeleteSavingTransactionAsync(int id, DeleteSavingTransactionRequest request, CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Delete, $"/saving-transactions/{id}", request, ct);
 }

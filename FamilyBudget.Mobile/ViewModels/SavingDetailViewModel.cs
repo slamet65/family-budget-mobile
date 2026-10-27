@@ -72,8 +72,17 @@ public partial class SavingDetailViewModel(IDomainRepository repository, ISyncCo
             await LoadAsync();
             return;
         }
-        if (!transaction.IsReadOnly)
-            await Shell.Current.GoToAsync($"savingExpenseForm?transactionId={transaction.Id}");
+        // The API rejects every edit/delete of a saving movement (SAVING_TRANSACTION_IMMUTABLE),
+        // so explain how to correct it instead of opening an edit form.
+        var message = transaction.Type switch
+        {
+            "opening_balance" => "Saldo awal dapat dikoreksi lewat tombol Ubah di bagian atas halaman ini.",
+            "deposit" when transaction.IsReadOnly =>
+                "Setoran otomatis mengikuti transaksi anggaran asalnya. Ubah atau hapus transaksi tersebut di menu Transaksi.",
+            _ => "Mutasi tabungan tidak dapat diubah atau dihapus. Untuk mengoreksi, catat mutasi kebalikannya, " +
+                 "misalnya Tarik untuk membatalkan Setor, atau Transfer balik ke tabungan asal.",
+        };
+        await feedback.ShowInfoDialogAsync("Mutasi tabungan", message);
     }
 
     partial void OnSelectedFlowChanged(string value) => ApplyFilter();

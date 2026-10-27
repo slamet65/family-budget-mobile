@@ -54,6 +54,14 @@
                                                TextColor="{Binding TotalRemaining, Converter={StaticResource AmountSignColorConverter}}" />
                                     </VerticalStackLayout>
                                 </Grid>
+                                <Label IsVisible="{Binding HasTotalFunded}" FontSize="12" TextColor="{StaticResource OnPrimaryContainer}" Opacity="0.8">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="Termasuk dana dari tabungan " />
+                                            <Span Text="{Binding TotalFunded, Converter={StaticResource MoneyConverter}}" FontAttributes="Bold" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
                             </VerticalStackLayout>
                         </Border>
 
@@ -102,6 +110,14 @@
                                                            TextColor="{Binding Budget.RemainingAmount, Converter={StaticResource AmountSignColorConverter}}" />
                                                 </VerticalStackLayout>
                                             </Grid>
+                                            <Label IsVisible="{Binding HasFunding}" FontSize="11" TextColor="{StaticResource OnSurfaceVariant}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="+ dana dari tabungan " />
+                                                        <Span Text="{Binding Budget.FundedAmount, Converter={StaticResource MoneyConverter}}" FontAttributes="Bold" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
                                         </VerticalStackLayout>
                                     </Border>
                                 </DataTemplate>

@@ -93,6 +93,7 @@ public partial class ApiClient(HttpClient http, SessionExpiredNotifier sessionEx
                 {
                     "SAVING_BALANCE_INSUFFICIENT" => "Saldo tabungan tidak mencukupi untuk perubahan ini. Sesuaikan pengeluaran tabungan terlebih dahulu.",
                     "SAVING_TRANSACTION_READ_ONLY" => "Transaksi tabungan otomatis hanya dapat diubah melalui transaksi anggaran asalnya.",
+                    "SAVING_TRANSACTION_IMMUTABLE" => "Mutasi tabungan tidak dapat diubah atau dihapus. Catat mutasi kebalikannya untuk mengoreksi.",
                     "CATEGORY_HAS_CHILDREN" => "Kategori yang memiliki subkategori tidak dapat dihubungkan ke tabungan.",
                     "SAVING_CATEGORY_CANNOT_BE_PARENT" => "Kategori tabungan tidak dapat memiliki subkategori.",
                     "CATCH_ALL_CANNOT_MAP_TO_SAVING" => "Kategori Lain-lain tidak dapat dihubungkan ke tabungan.",

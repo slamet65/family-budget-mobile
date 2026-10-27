@@ -461,23 +461,35 @@ Check(savingBalances.Single(item => item.Id == 7).Balance == 400
     "offline saving transfer applies both sides atomically in the local projection");
 await savingMutationDatabase.CancelOutboxAsync(1, pendingTransfer.LocalId!);
 
-var editedSavingExpense = await savingMutationDatabase.EnqueueSavingTransactionUpdateAsync(1, directExpense,
-    new(7, "expense", 150, null, null, null, null, null, null, "Edited", date));
-Check((await savingMutationDatabase.GetSavingsAsync(1)).Single(item => item.Id == 7).Balance == 450
-    && (await savingMutationDatabase.GetSavingTransactionAsync(1, 81)) is { Amount: 150, SyncStatus: "pending" },
-    "offline saving edit reverses the previous effect before applying the optimistic value");
-await savingMutationDatabase.FailOutboxAsync(editedSavingExpense.LocalId!, "conflict", permanent: true);
-Check((await savingMutationDatabase.GetSavingTransactionAsync(1, 81)) is { Amount: 150, SyncStatus: "failed" },
-    "rejected saving edit keeps user input available");
-await savingMutationDatabase.CancelOutboxAsync(1, editedSavingExpense.LocalId!);
-await savingMutationDatabase.EnqueueSavingTransactionDeleteAsync(1, directExpense);
-var savingDelete = (await savingMutationDatabase.GetPendingOutboxAsync(1)).Single();
-Check(await savingMutationDatabase.GetSavingTransactionAsync(1, 81) is null
-    && (await savingMutationDatabase.GetSavingsAsync(1)).Single(item => item.Id == 7).Balance == 600,
-    "offline saving delete hides the row and reverses its balance effect");
-await savingMutationDatabase.CompleteSavingOutboxAsync(savingDelete.OperationId, null);
-Check((await savingMutationDatabase.GetPendingOutboxAsync(1)).Count == 0,
-    "successful saving delete clears its local tombstone and outbox");
+// Saving movements are immutable now, but older app versions could queue an offline edit.
+// Such an item must fail locally without an API call and stay cancellable.
+var legacyEditId = Guid.NewGuid().ToString();
+const string directExpenseKey = "1:saving_transaction:81";
+var legacyEditPayload = JsonSerializer.Serialize(directExpense with { Amount = 150, LocalId = legacyEditId, SyncStatus = "pending" });
+using (var raw = new SQLite.SQLiteConnection(savingMutationPath))
+{
+    raw.Execute("UPDATE domain_entities SET LocalId=?, SyncStatus='pending', PayloadJson=? WHERE Key=?",
+        legacyEditId, legacyEditPayload, directExpenseKey);
+    raw.Insert(new FamilyBudget.Mobile.Services.Local.Entities.LocalOutboxItem
+    {
+        OperationId = legacyEditId, UserId = 1, EntityLocalId = directExpenseKey, EntityType = "saving_transaction",
+        OperationType = "update", ServerId = 81, ExpectedVersion = directExpense.Version, TransactionType = "expense",
+        PayloadJson = legacyEditPayload, PreviousPayloadJson = JsonSerializer.Serialize(directExpense),
+        Status = "pending", CreatedAtUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+    });
+}
+var legacyApi = DispatchProxy.Create<IApiClient, ApiProxy>();
+((ApiProxy)(object)legacyApi).Handler = (method, _) => throw new InvalidOperationException($"Unexpected API call: {method.Name}");
+await new OutboxSyncService(savingMutationDatabase, legacyApi, auth, new TestNetwork { IsInternetAvailable = true })
+    .ProcessPendingAsync();
+Check((await savingMutationDatabase.GetPendingOutboxAsync(1)).Count == 0
+    && (await savingMutationDatabase.GetSavingTransactionAsync(1, 81)) is { Amount: 150, SyncStatus: "failed" },
+    "legacy queued saving edit is rejected locally without calling the API");
+await savingMutationDatabase.CancelOutboxAsync(1, legacyEditId);
+Check((await savingMutationDatabase.GetSavingTransactionAsync(1, 81)) is { SyncStatus: "synced" } restored
+    && restored.Amount == directExpense.Amount
+    && (await savingMutationDatabase.GetSavingsAsync(1)).Single(item => item.Id == 7).Balance == 500,
+    "cancelling a legacy saving edit restores the original row and balance");
 
 var savingProcessorPath = Path.Combine(Path.GetTempPath(), $"family-budget-saving-processor-{Guid.NewGuid():N}.db3");
 var savingProcessorDatabase = new LocalDatabase(savingProcessorPath);
@@ -485,12 +497,10 @@ await savingProcessorDatabase.ReplaceLedgerSnapshotAsync(1, [wallet], [period], 
 await savingProcessorDatabase.ReplaceDomainSnapshotAsync(1, new([saving], [], [], []));
 var savingProcessorNetwork = new TestNetwork { IsInternetAvailable = false };
 CreateSavingDepositRequest? capturedSavingCreate = null;
-CreateSavingDepositRequest? capturedSavingUpdate = null;
 var savingApi = DispatchProxy.Create<IApiClient, ApiProxy>();
 ((ApiProxy)(object)savingApi).Handler = (method, args) => method.Name switch
 {
     nameof(IApiClient.CreateSavingTransactionAsync) => CaptureSavingCreate(args),
-    nameof(IApiClient.UpdateSavingTransactionAsync) => CaptureSavingUpdate(args),
     _ => throw new NotImplementedException(method.Name),
 };
 Task<SavingTransactionDto> CaptureSavingCreate(object?[]? args)
@@ -503,15 +513,6 @@ Task<SavingTransactionDto> CaptureSavingCreate(object?[]? args)
         UserId: 1, OccurredAt: capturedSavingCreate.OccurredAt, CreatedAt: date,
         ClientMutationId: capturedSavingCreate.ClientMutationId, Version: 1));
 }
-Task<SavingTransactionDto> CaptureSavingUpdate(object?[]? args)
-{
-    capturedSavingUpdate = (CreateSavingDepositRequest)args![1]!;
-    return Task.FromResult(new SavingTransactionDto(Id: 90, SavingId: 7, Type: "deposit", Amount: capturedSavingUpdate.Amount,
-        SourceTransactionId: 91, TransferGroupId: null, SourceCategoryName: null,
-        FromWalletId: capturedSavingUpdate.FromWalletId, FromWalletName: "Cash", ToWalletId: null, ToWalletName: null,
-        RelatedSavingId: null, RelatedTransactionId: null, RelatedSavingName: null, Note: capturedSavingUpdate.Note,
-        UserId: 1, OccurredAt: capturedSavingUpdate.OccurredAt, CreatedAt: date, Version: 2));
-}
 var savingProcessor = new OutboxSyncService(savingProcessorDatabase, savingApi, auth, savingProcessorNetwork);
 await savingProcessor.EnqueueSavingAsync(new(7, "deposit", 200, 1, "Cash", null, null, null, null, null, date));
 savingProcessorNetwork.IsInternetAvailable = true;
@@ -519,14 +520,28 @@ await savingProcessor.ProcessPendingAsync();
 var syncedSavingDeposit = (await savingProcessorDatabase.GetSavingTransactionAsync(1, 90))!;
 Check(capturedSavingCreate?.ClientMutationId is not null && syncedSavingDeposit.Version == 1,
     "saving outbox processor sends stable idempotency id for create");
+
+// A deposit returning earmarked money keeps its category through the offline queue.
 savingProcessorNetwork.IsInternetAvailable = false;
-await savingProcessor.EnqueueSavingUpdateAsync(syncedSavingDeposit,
-    new(7, "deposit", 250, 1, "Cash", null, null, null, null, null, date));
+var pendingFundedReturn = await savingProcessor.EnqueueSavingAsync(
+    new(7, "deposit", 50, 1, "Cash", null, null, null, null, null, date, 5, "Liburan"));
+Check(pendingFundedReturn is { FundedCategoryId: 5, FundedCategoryName: "Liburan", IsReadOnly: false },
+    "pending funded deposit keeps its category and is not treated as an automatic allocation");
 savingProcessorNetwork.IsInternetAvailable = true;
 await savingProcessor.ProcessPendingAsync();
-Check(capturedSavingUpdate is { ExpectedVersion: 1, ClientMutationId: not null }
-    && (await savingProcessorDatabase.GetSavingTransactionAsync(1, 90))?.Version == 2,
-    "saving outbox processor sends expectedVersion for edit");
+Check(capturedSavingCreate?.CategoryId == 5, "saving outbox processor sends the funded category");
+Check(!JsonSerializer.Serialize(new CreateSavingWithdrawalRequest(1, 100, date, null), JsonOptions.Default).Contains("categoryId")
+    && JsonSerializer.Serialize(new CreateSavingWithdrawalRequest(1, 100, date, null, CategoryId: 5), JsonOptions.Default)
+        .Contains("\"categoryId\":5"),
+    "a loan withdrawal omits categoryId; a funded one sends it");
+var fundedBudget = JsonSerializer.Deserialize<BudgetDto>(
+    """{"id":1,"periodId":1,"periodName":"P","categoryId":5,"categoryName":"Liburan","savingId":null,"savingName":null,"plannedAmount":0,"fundedAmount":3000,"actualAmount":2000,"remainingAmount":1000,"createdAt":"2026-09-15T00:00:00Z"}""",
+    JsonOptions.Default);
+var legacyBudget = JsonSerializer.Deserialize<BudgetDto>(
+    """{"id":1,"periodId":1,"periodName":"P","categoryId":5,"categoryName":"Liburan","savingId":null,"savingName":null,"plannedAmount":0,"actualAmount":0,"remainingAmount":0,"createdAt":"2026-09-15T00:00:00Z"}""",
+    JsonOptions.Default);
+Check(fundedBudget?.FundedAmount == 3000 && legacyBudget?.FundedAmount == 0,
+    "budget fundedAmount parses and defaults to zero for cached rows without it");
 
 Check(await database.GetSyncCursorAsync(1) is null, "new account has no incremental cursor");
 await database.SetSyncCursorAsync(1, 1234);

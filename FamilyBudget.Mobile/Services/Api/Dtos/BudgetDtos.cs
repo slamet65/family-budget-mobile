@@ -2,6 +2,8 @@ namespace FamilyBudget.Mobile.Services.Api.Dtos;
 
 // GET /periods/:periodId/budgets — actualAmount/remainingAmount are always populated here:
 // computed live while the period is open, frozen onto the row at tutup buku time once closed.
+// FundedAmount is savings money withdrawn for this category this period;
+// RemainingAmount = PlannedAmount + FundedAmount - ActualAmount.
 public record BudgetDto(
     int Id,
     int PeriodId,
@@ -13,7 +15,8 @@ public record BudgetDto(
     long PlannedAmount,
     long ActualAmount,
     long RemainingAmount,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    long FundedAmount = 0);
 
 public record UpsertBudgetRequest(long PlannedAmount);
 

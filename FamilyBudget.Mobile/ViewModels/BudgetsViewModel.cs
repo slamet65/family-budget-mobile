@@ -33,6 +33,12 @@ public partial class BudgetsViewModel(IDomainRepository repository, IReferenceDa
     [ObservableProperty]
     private long totalRemaining;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTotalFunded))]
+    private long totalFunded;
+
+    public bool HasTotalFunded => TotalFunded != 0;
+
     public bool IsPeriodOpen => SelectedPeriod?.IsOpen ?? false;
 
     [RelayCommand]
@@ -78,7 +84,7 @@ public partial class BudgetsViewModel(IDomainRepository repository, IReferenceDa
         Budgets.Clear();
         if (SelectedPeriod is null)
         {
-            TotalPlanned = TotalActual = TotalRemaining = 0;
+            TotalPlanned = TotalActual = TotalRemaining = TotalFunded = 0;
             return;
         }
 
@@ -95,6 +101,9 @@ public partial class BudgetsViewModel(IDomainRepository repository, IReferenceDa
         var plannedBudgets = budgets.Where(b => b.CategoryId != catchAllCategoryId);
         TotalPlanned = plannedBudgets.Sum(b => b.PlannedAmount);
         TotalActual = plannedBudgets.Sum(b => b.ActualAmount);
-        TotalRemaining = TotalPlanned - TotalActual;
+        // Savings money spent on a category adds to what that category can spend, same as
+        // each row's RemainingAmount from the API.
+        TotalFunded = plannedBudgets.Sum(b => b.FundedAmount);
+        TotalRemaining = TotalPlanned + TotalFunded - TotalActual;
     }
 }

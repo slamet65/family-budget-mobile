@@ -6,90 +6,42 @@ namespace FamilyBudget.Mobile.Services.Local;
 
 public sealed partial class LocalDatabase
 {
-    public Task<SavingTransactionDto> EnqueueSavingTransactionAsync(int userId, PendingSavingTransactionInput input) =>
-        WriteSavingMutationAsync(userId, null, input, "create");
-
-    public Task<SavingTransactionDto> EnqueueSavingTransactionUpdateAsync(int userId, SavingTransactionDto original,
-        PendingSavingTransactionInput input)
-    {
-        if (original.Id <= 0 || !original.IsSynced || original.IsReadOnly)
-            throw new InvalidOperationException("Only a synchronized editable saving transaction can be changed offline.");
-        return WriteSavingMutationAsync(userId, original, input, "update");
-    }
-
-    public async Task EnqueueSavingTransactionDeleteAsync(int userId, SavingTransactionDto original)
-    {
-        if (original.Id <= 0 || !original.IsSynced || original.IsReadOnly)
-            throw new InvalidOperationException("Only a synchronized editable saving transaction can be deleted offline.");
-        var db = await GetConnectionAsync();
-        var key = $"{userId}:saving_transaction:{original.Id}";
-        var operationId = Guid.NewGuid().ToString();
-        var previous = JsonSerializer.Serialize(original with { LocalId = null, SyncStatus = "synced", SyncError = null });
-        await db.RunInTransactionAsync(connection =>
-        {
-            if (connection.Find<LocalDomainEntity>(key) is null) throw new InvalidOperationException("Saving transaction is not cached.");
-            EnsureNoSavingMutation(connection, userId, key);
-            connection.Execute("UPDATE domain_entities SET LocalId=?, SyncStatus='pending', SyncError=NULL, IsDeleted=1 WHERE Key=?",
-                operationId, key);
-            connection.Insert(new LocalOutboxItem
-            {
-                OperationId = operationId, UserId = userId, EntityLocalId = key, EntityType = "saving_transaction",
-                OperationType = "delete", ServerId = original.Id, ExpectedVersion = original.Version,
-                TransactionType = original.Type, PayloadJson = previous, PreviousPayloadJson = previous,
-                Status = "pending", CreatedAtUnixMilliseconds = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            });
-        });
-    }
-
-    private async Task<SavingTransactionDto> WriteSavingMutationAsync(int userId, SavingTransactionDto? original,
-        PendingSavingTransactionInput input, string operationType)
+    // Create-only: saving movements are immutable on the API, so there is no offline
+    // update/delete path. Update/delete items queued by older app versions are still read
+    // (balance overlay, cancel restore) until the user cancels them.
+    public async Task<SavingTransactionDto> EnqueueSavingTransactionAsync(int userId, PendingSavingTransactionInput input)
     {
         var db = await GetConnectionAsync();
         var operationId = Guid.NewGuid().ToString();
-        var key = original is null ? $"{userId}:saving_transaction:local:{operationId}"
-            : $"{userId}:saving_transaction:{original.Id}";
+        var key = $"{userId}:saving_transaction:local:{operationId}";
         var now = DateTimeOffset.UtcNow;
-        var edited = new SavingTransactionDto(
-            original?.Id ?? 0, input.SavingId, input.Type, input.Amount,
-            original?.SourceTransactionId, original?.TransferGroupId, original?.SourceCategoryName,
+        var pending = new SavingTransactionDto(
+            0, input.SavingId, input.Type, input.Amount,
+            null, null, null,
             input.FromWalletId, input.FromWalletName, input.ToWalletId, input.ToWalletName,
-            input.RelatedSavingId, original?.RelatedTransactionId, input.RelatedSavingName,
-            input.Note, userId, input.OccurredAt, original?.CreatedAt ?? now,
-            original?.ClientMutationId ?? operationId, operationId, "pending", null, original?.Version ?? 1);
-        var payload = JsonSerializer.Serialize(edited);
-        var previous = original is null ? null : JsonSerializer.Serialize(original with
-        {
-            LocalId = null, SyncStatus = "synced", SyncError = null,
-        });
+            input.RelatedSavingId, null, input.RelatedSavingName,
+            input.Note, userId, input.OccurredAt, now,
+            operationId, operationId, "pending", null, 1,
+            input.FundedCategoryId, input.FundedCategoryName);
+        var payload = JsonSerializer.Serialize(pending);
         await db.RunInTransactionAsync(connection =>
         {
-            if (original is not null)
+            connection.Insert(new LocalDomainEntity
             {
-                if (connection.Find<LocalDomainEntity>(key) is null) throw new InvalidOperationException("Saving transaction is not cached.");
-                EnsureNoSavingMutation(connection, userId, key);
-                connection.Execute("UPDATE domain_entities SET GroupId=?, LocalId=?, SyncStatus='pending', SyncError=NULL, IsDeleted=0, PayloadJson=? WHERE Key=?",
-                    input.SavingId, operationId, payload, key);
-            }
-            else
-            {
-                connection.Insert(new LocalDomainEntity
-                {
-                    Key = key, UserId = userId, EntityType = "saving_transaction", ServerId = 0,
-                    GroupId = input.SavingId, LocalId = operationId, SyncStatus = "pending", PayloadJson = payload,
-                });
-            }
+                Key = key, UserId = userId, EntityType = "saving_transaction", ServerId = 0,
+                GroupId = input.SavingId, LocalId = operationId, SyncStatus = "pending", PayloadJson = payload,
+            });
             connection.Insert(new LocalOutboxItem
             {
                 OperationId = operationId, UserId = userId, EntityLocalId = key, EntityType = "saving_transaction",
-                OperationType = operationType, ServerId = original?.Id, ExpectedVersion = original?.Version,
-                TransactionType = input.Type, PayloadJson = payload, PreviousPayloadJson = previous,
+                OperationType = "create", TransactionType = input.Type, PayloadJson = payload,
                 Status = "pending", CreatedAtUnixMilliseconds = now.ToUnixTimeMilliseconds(),
             });
         });
-        return edited;
+        return pending;
     }
 
-    public async Task CompleteSavingOutboxAsync(string operationId, SavingTransactionDto? serverTransaction)
+    public async Task CompleteSavingOutboxAsync(string operationId, SavingTransactionDto serverTransaction)
     {
         var db = await GetConnectionAsync();
         await db.RunInTransactionAsync(connection =>
@@ -97,13 +49,7 @@ public sealed partial class LocalDatabase
             var item = connection.Find<LocalOutboxItem>(operationId);
             if (item is null) return;
             var local = connection.Find<LocalDomainEntity>(item.EntityLocalId);
-            if (item.OperationType == "delete")
-            {
-                if (local is not null) connection.Delete(local);
-                connection.Delete(item);
-                return;
-            }
-            if (local is null || serverTransaction is null) return;
+            if (local is null) return;
             var display = serverTransaction with { LocalId = null, SyncStatus = "synced", SyncError = null };
             var serverKey = $"{item.UserId}:saving_transaction:{serverTransaction.Id}";
             if (serverKey != local.Key)
@@ -123,11 +69,5 @@ public sealed partial class LocalDatabase
             connection.InsertOrReplace(local);
             connection.Delete(item);
         });
-    }
-
-    private static void EnsureNoSavingMutation(SQLite.SQLiteConnection connection, int userId, string key)
-    {
-        if (connection.Table<LocalOutboxItem>().Any(item => item.UserId == userId && item.EntityLocalId == key))
-            throw new InvalidOperationException("Saving transaction already has a pending change.");
     }
 }

@@ -72,8 +72,6 @@ public sealed class FakeOutbox : IOutboxSyncService
     public Task<TransactionDto> EnqueueUpdateAsync(TransactionDto original, PendingTransactionInput input) => throw new NotImplementedException();
     public Task EnqueueDeleteAsync(TransactionDto original) => throw new NotImplementedException();
     public Task<SavingTransactionDto> EnqueueSavingAsync(PendingSavingTransactionInput input) => throw new NotImplementedException();
-    public Task<SavingTransactionDto> EnqueueSavingUpdateAsync(SavingTransactionDto original, PendingSavingTransactionInput input) => throw new NotImplementedException();
-    public Task EnqueueSavingDeleteAsync(SavingTransactionDto original) => throw new NotImplementedException();
     public Task ProcessPendingAsync(CancellationToken ct = default) => Task.CompletedTask;
     public void TriggerSync() { }
     public Task RetryAsync(string id) => Task.CompletedTask;

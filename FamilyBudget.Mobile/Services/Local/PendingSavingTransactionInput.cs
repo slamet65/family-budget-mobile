@@ -11,4 +11,6 @@ public sealed record PendingSavingTransactionInput(
     int? RelatedSavingId,
     string? RelatedSavingName,
     string? Note,
-    DateTimeOffset OccurredAt);
+    DateTimeOffset OccurredAt,
+    int? FundedCategoryId = null,
+    string? FundedCategoryName = null);

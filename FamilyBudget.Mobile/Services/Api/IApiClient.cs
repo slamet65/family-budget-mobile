@@ -30,12 +30,8 @@ public partial interface IApiClient
 
     Task<SavingTransactionDto> GetSavingTransactionAsync(int id, CancellationToken ct = default);
 
+    // No update/delete: saving movements are immutable on the API (SAVING_TRANSACTION_IMMUTABLE).
     Task<SavingTransactionDto> CreateSavingTransactionAsync(int savingId, object request, CancellationToken ct = default);
-
-    Task<SavingTransactionDto> UpdateSavingTransactionAsync(int id, object request, CancellationToken ct = default);
-
-    Task DeleteSavingTransactionAsync(int id, CancellationToken ct = default);
-    Task DeleteSavingTransactionAsync(int id, DeleteSavingTransactionRequest request, CancellationToken ct = default);
 
     Task<List<PeriodDto>> GetPeriodsAsync(CancellationToken ct = default);
 

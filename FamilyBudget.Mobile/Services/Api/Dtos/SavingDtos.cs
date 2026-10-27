@@ -65,7 +65,11 @@ public record SavingTransactionDto(
     string? LocalId = null,
     string SyncStatus = "synced",
     string? SyncError = null,
-    int Version = 1)
+    int Version = 1,
+    // Set on a withdrawal spent on a budget category, or a deposit returning that money.
+    // Unlike SourceCategoryName, it doesn't make the row read-only.
+    int? FundedCategoryId = null,
+    string? FundedCategoryName = null)
 {
     public bool IsSynced => SyncStatus == "synced";
     public string SyncStatusText => SyncStatus switch
@@ -82,7 +86,9 @@ public record SavingTransactionDto(
     {
         "opening_balance" => "Saldo awal",
         "deposit" when SourceCategoryName is not null => $"Alokasi · {SourceCategoryName}",
+        "deposit" when FundedCategoryName is not null => $"Kembalikan sisa {FundedCategoryName} dari {FromWalletName ?? "dompet"}",
         "deposit" => $"Setor dari {FromWalletName ?? "dompet"}",
+        "withdrawal" when FundedCategoryName is not null => $"Tarik untuk {FundedCategoryName} ke {ToWalletName ?? "dompet"}",
         "withdrawal" => $"Tarik ke {ToWalletName ?? "dompet"}",
         "transfer_in" => $"Transfer dari {RelatedSavingName ?? "tabungan"}",
         "transfer_out" => $"Transfer ke {RelatedSavingName ?? "tabungan"}",
@@ -93,27 +99,30 @@ public record SavingTransactionDto(
 }
 
 public record CreateSavingExpenseRequest(long Amount, DateTimeOffset OccurredAt, string? Note,
-    string? ClientMutationId = null, int? ExpectedVersion = null)
+    string? ClientMutationId = null)
 {
     public string Type => "expense";
 }
 
+// CategoryId: null = plain deposit / loan repayment; set = returning unspent money
+// that an earlier withdrawal earmarked for that category.
 public record CreateSavingDepositRequest(int FromWalletId, long Amount, DateTimeOffset OccurredAt, string? Note,
-    string? ClientMutationId = null, int? ExpectedVersion = null)
+    string? ClientMutationId = null, int? CategoryId = null)
 {
     public string Type => "deposit";
 }
 
+// CategoryId: null = a loan to the wallet; set = the money is spent on that category
+// and counts toward its budget (fundedAmount) for the open period.
 public record CreateSavingWithdrawalRequest(int ToWalletId, long Amount, DateTimeOffset OccurredAt, string? Note,
-    string? ClientMutationId = null, int? ExpectedVersion = null)
+    string? ClientMutationId = null, int? CategoryId = null)
 {
     public string Type => "withdrawal";
 }
 
 public record CreateSavingTransferRequest(int ToSavingId, long Amount, DateTimeOffset OccurredAt, string? Note,
-    string? ClientMutationId = null, int? ExpectedVersion = null)
+    string? ClientMutationId = null)
 {
     public string Type => "transfer";
 }
 
-public record DeleteSavingTransactionRequest(string ClientMutationId, int ExpectedVersion);
