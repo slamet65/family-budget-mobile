@@ -18,8 +18,59 @@ public sealed class DomainRepository(ILocalDatabase database, IApiClient api, IA
         var budgets = new List<BudgetDto>();
         foreach (var period in periods) budgets.AddRange(await api.GetBudgetsAsync(period.Id, ct));
         var users = await api.GetUsersAsync(ct);
+        var debts = await api.GetDebtsAsync(ct);
+        var debtTransactions = new List<DebtTransactionDto>();
+        foreach (var debt in debts) debtTransactions.AddRange(await api.GetDebtTransactionsAsync(debt.Id, ct));
         if (auth.CurrentUser?.Id != userId) return;
-        await database.ReplaceDomainSnapshotAsync(userId, new(savings, savingTransactions, budgets, users));
+        await database.ReplaceDomainSnapshotAsync(userId,
+            new(savings, savingTransactions, budgets, users, debts, debtTransactions));
+    }
+
+    public async Task RefreshDebtsAsync(CancellationToken ct = default)
+    {
+        var userId = UserId;
+        var debts = await api.GetDebtsAsync(ct);
+        var transactions = new List<DebtTransactionDto>();
+        foreach (var debt in debts) transactions.AddRange(await api.GetDebtTransactionsAsync(debt.Id, ct));
+        if (auth.CurrentUser?.Id != userId) return;
+        await database.ReplaceDebtsSnapshotAsync(userId, debts, transactions);
+    }
+
+    public async Task RefreshDebtChangesAsync(IReadOnlyCollection<SyncChangeDto> changes,
+        CancellationToken ct = default)
+    {
+        var userId = UserId;
+        var debtIds = changes.Where(change => change.EntityType == "debts")
+            .Select(change => change.EntityId).ToHashSet();
+        foreach (var change in changes.Where(change => change.EntityType == "debt_transactions"))
+        {
+            // A payment can move to another debt when its expense changes category.
+            var cached = await database.GetDebtTransactionAsync(userId, change.EntityId);
+            if (cached is not null) debtIds.Add(cached.DebtId);
+            if (change.Operation != "delete")
+            {
+                try
+                {
+                    debtIds.Add((await api.GetDebtTransactionAsync(change.EntityId, ct)).DebtId);
+                }
+                catch (ApiException exception) when (exception.StatusCode == 404) { }
+            }
+        }
+
+        var debts = new List<DebtDto>();
+        var transactions = new List<DebtTransactionDto>();
+        foreach (var debtId in debtIds)
+        {
+            try
+            {
+                var detail = await api.GetDebtAsync(debtId, ct);
+                debts.Add(new DebtDto(detail.Id, detail.Name, detail.Note, detail.Balance, detail.CreatedAt));
+                transactions.AddRange(await api.GetDebtTransactionsAsync(debtId, ct));
+            }
+            catch (ApiException exception) when (exception.StatusCode == 404) { }
+        }
+        if (auth.CurrentUser?.Id != userId) return;
+        await database.ReplaceDebtsAsync(userId, debtIds, debts, transactions);
     }
 
     public async Task RefreshSavingsAsync(CancellationToken ct = default)
@@ -96,6 +147,9 @@ public sealed class DomainRepository(ILocalDatabase database, IApiClient api, IA
     public Task<IReadOnlyList<SavingDto>> GetSavingsAsync() => database.GetSavingsAsync(UserId);
     public Task<IReadOnlyList<SavingTransactionDto>> GetSavingTransactionsAsync(int id) => database.GetSavingTransactionsAsync(UserId, id);
     public Task<SavingTransactionDto?> GetSavingTransactionAsync(int id) => database.GetSavingTransactionAsync(UserId, id);
+    public Task<IReadOnlyList<DebtDto>> GetDebtsAsync() => database.GetDebtsAsync(UserId);
+    public Task<IReadOnlyList<DebtTransactionDto>> GetDebtTransactionsAsync(int id) => database.GetDebtTransactionsAsync(UserId, id);
+    public Task<DebtTransactionDto?> GetDebtTransactionAsync(int id) => database.GetDebtTransactionAsync(UserId, id);
     public Task<IReadOnlyList<BudgetDto>> GetBudgetsAsync(int id) => database.GetBudgetsAsync(UserId, id);
     public Task<IReadOnlyList<UserDto>> GetUsersAsync() => database.GetUsersAsync(UserId);
 
@@ -106,5 +160,14 @@ public sealed class DomainRepository(ILocalDatabase database, IApiClient api, IA
         var opening = (await GetSavingTransactionsAsync(savingId)).FirstOrDefault(item => item.Type == "opening_balance");
         return new(saving.Id, saving.Name, saving.Note, saving.Balance, opening?.Amount ?? 0,
             opening?.OccurredAt, saving.CreatedAt);
+    }
+
+    public async Task<DebtDetailDto?> GetDebtAsync(int debtId)
+    {
+        var debt = (await GetDebtsAsync()).FirstOrDefault(item => item.Id == debtId);
+        if (debt is null) return null;
+        var opening = (await GetDebtTransactionsAsync(debtId)).FirstOrDefault(item => item.Type == "opening_balance");
+        return new(debt.Id, debt.Name, debt.Note, debt.Balance, opening?.Amount ?? 0,
+            opening?.OccurredAt, debt.CreatedAt);
     }
 }

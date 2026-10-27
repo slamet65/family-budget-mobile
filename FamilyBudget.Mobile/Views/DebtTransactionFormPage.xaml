@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:FamilyBudget.Mobile.ViewModels" xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             xmlns:behaviors="clr-namespace:FamilyBudget.Mobile.Behaviors"
+             x:DataType="vm:DebtTransactionFormViewModel" x:Class="FamilyBudget.Mobile.Views.DebtTransactionFormPage"
+             Title="{Binding TypeLabel}" BackgroundColor="{StaticResource Surface}">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Button Grid.Column="0" Text="Tambah" Command="{Binding SetTypeCommand}" CommandParameter="increase"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="increase"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
+                </Button>
+                <Button Grid.Column="1" Text="Tabungan" Command="{Binding SetTypeCommand}" CommandParameter="saving_payment"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="saving_payment"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
+                </Button>
+                <Button Grid.Column="2" Text="Kurangi" Command="{Binding SetTypeCommand}" CommandParameter="reduction"
+                        BackgroundColor="{StaticResource SurfaceContainer}" TextColor="{StaticResource OnSurfaceVariant}">
+                    <Button.Triggers><DataTrigger TargetType="Button" Binding="{Binding SelectedType}" Value="reduction"><Setter Property="BackgroundColor" Value="{StaticResource SecondaryContainer}" /><Setter Property="TextColor" Value="{StaticResource OnSecondaryContainer}" /></DataTrigger></Button.Triggers>
+                </Button>
+            </Grid>
+            <Label Text="{Binding TypeHint}" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+            <Label Text="{Binding RemainingText}" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource OnSurface}" />
+
+            <VerticalStackLayout Spacing="4" IsVisible="{Binding IsSavingPayment}">
+                <Label Text="Dari tabungan" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding Savings}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding SelectedSaving}" />
+                <Label Text="{Binding SavingBalanceText}" FontSize="11" TextColor="{StaticResource OnSurfaceVariant}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Jumlah (Rp)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Entry Text="{Binding AmountText}" Keyboard="Numeric" Placeholder="0">
+                    <Entry.Behaviors><behaviors:ThousandsSeparatorBehavior /></Entry.Behaviors>
+                </Entry>
+                <Label Text="{Binding SavingWarning}" IsVisible="{Binding HasSavingWarning}" FontSize="12" TextColor="{StaticResource Error}" />
+                <Label Text="{Binding OverpayWarning}" IsVisible="{Binding HasOverpayWarning}" FontSize="12" TextColor="{StaticResource Error}" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="4"><Label Text="Tanggal" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" /><DatePicker Date="{Binding OccurredAt}" MaximumDate="{x:Static sys:DateTime.Today}" /></VerticalStackLayout>
+            <VerticalStackLayout Spacing="4"><Label Text="Catatan (opsional)" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" /><Editor Text="{Binding Note}" AutoSize="TextChanges" /></VerticalStackLayout>
+            <Button Text="Simpan" Command="{Binding SaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Margin="0,10,0,0" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

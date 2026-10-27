@@ -47,6 +47,15 @@ public interface ILocalDatabase
     Task<SavingTransactionDto?> GetSavingTransactionAsync(int userId, int serverId);
     Task<SavingTransactionDto> EnqueueSavingTransactionAsync(int userId, PendingSavingTransactionInput input);
     Task CompleteSavingOutboxAsync(string operationId, SavingTransactionDto serverTransaction);
+    Task ReplaceDebtsSnapshotAsync(int userId, IReadOnlyCollection<DebtDto> debts,
+        IReadOnlyCollection<DebtTransactionDto> transactions);
+    Task ReplaceDebtsAsync(int userId, IReadOnlyCollection<int> debtIds,
+        IReadOnlyCollection<DebtDto> debts, IReadOnlyCollection<DebtTransactionDto> transactions);
+    Task<IReadOnlyList<DebtDto>> GetDebtsAsync(int userId);
+    Task<IReadOnlyList<DebtTransactionDto>> GetDebtTransactionsAsync(int userId, int debtId);
+    Task<DebtTransactionDto?> GetDebtTransactionAsync(int userId, int serverId);
+    Task<DebtTransactionDto> EnqueueDebtTransactionAsync(int userId, PendingDebtTransactionInput input);
+    Task CompleteDebtOutboxAsync(string operationId, DebtTransactionDto serverTransaction);
     Task<IReadOnlyList<BudgetDto>> GetBudgetsAsync(int userId, int periodId);
     Task<IReadOnlyList<UserDto>> GetUsersAsync(int userId);
 }

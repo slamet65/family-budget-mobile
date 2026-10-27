@@ -19,5 +19,8 @@ public sealed class LocalCategory
     public bool IsCatchAll { get; set; }
     public int? SavingId { get; set; }
     public string? SavingName { get; set; }
+    // Added after schema 8; sqlite-net's CreateTable adds the columns to existing databases.
+    public int? DebtId { get; set; }
+    public string? DebtName { get; set; }
     public long CreatedAtUnixMilliseconds { get; set; }
 }

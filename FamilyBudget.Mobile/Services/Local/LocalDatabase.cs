@@ -85,7 +85,9 @@ public sealed partial class LocalDatabase(string databasePath) : ILocalDatabase
             row.IsCatchAll,
             row.SavingId,
             row.SavingName,
-            DateTimeOffset.FromUnixTimeMilliseconds(row.CreatedAtUnixMilliseconds)))
+            DateTimeOffset.FromUnixTimeMilliseconds(row.CreatedAtUnixMilliseconds),
+            row.DebtId,
+            row.DebtName))
             .ToList();
     }
 
@@ -102,6 +104,8 @@ public sealed partial class LocalDatabase(string databasePath) : ILocalDatabase
             IsCatchAll = category.IsCatchAll,
             SavingId = category.SavingId,
             SavingName = category.SavingName,
+            DebtId = category.DebtId,
+            DebtName = category.DebtName,
             CreatedAtUnixMilliseconds = category.CreatedAt.ToUnixTimeMilliseconds(),
         }).ToList();
 

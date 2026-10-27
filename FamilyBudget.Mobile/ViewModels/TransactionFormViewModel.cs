@@ -14,10 +14,12 @@ namespace FamilyBudget.Mobile.ViewModels;
 
 [QueryProperty(nameof(TransactionIdRaw), "transactionId")]
 public partial class TransactionFormViewModel(ILedgerRepository ledgerRepository,
-    IReferenceDataRepository referenceRepository, IOutboxSyncService outbox,
+    IReferenceDataRepository referenceRepository, IDomainRepository domainRepository, IOutboxSyncService outbox,
     IUserFeedbackService feedback) : ViewModelBase(feedback)
 {
     private TransactionDto? loadedTransaction;
+    // Debt-mapped categories: an expense there pays the debt off.
+    private Dictionary<int, DebtDto> debtsByCategoryId = [];
     public ObservableCollection<WalletDto> Wallets { get; } = [];
 
     public ObservableCollection<CategoryPickerOption> CategoryOptions { get; } = [];
@@ -58,6 +60,41 @@ public partial class TransactionFormViewModel(ILedgerRepository ledgerRepository
 
     public string PageTitle => IsEditMode ? "Ubah Transaksi" : "Tambah Transaksi";
 
+    private DebtDto? SelectedDebt => SelectedType == "expense" && SelectedCategoryOption is { } option
+        && debtsByCategoryId.TryGetValue(option.Id, out var debt) ? debt : null;
+
+    // Remaining debt before this transaction; when editing, the payment it already made is added back.
+    private long RemainingBeforeThis => SelectedDebt is not { } debt ? 0
+        : debt.Balance + (loadedTransaction is { Type: "expense", CategoryId: { } loadedCategoryId }
+            && debtsByCategoryId.TryGetValue(loadedCategoryId, out var loadedDebt) && loadedDebt.Id == debt.Id
+            ? loadedTransaction.Amount : 0);
+
+    public string? DebtHint => SelectedDebt is { } debt
+        ? RemainingBeforeThis < 0
+            ? $"Membayar utang {debt.Name} · sudah lebih bayar Rp {-RemainingBeforeThis:N0}"
+            : $"Membayar utang {debt.Name} · sisa Rp {RemainingBeforeThis:N0}"
+        : null;
+    public bool HasDebtHint => DebtHint is not null;
+
+    // Overpaying is allowed by the API, so this is only a warning.
+    public string? DebtOverpayWarning => SelectedDebt is not null
+        && NumberInput.TryParseLong(AmountText, out var amount) && amount > RemainingBeforeThis
+            ? $"Melebihi sisa utang. Kelebihan Rp {amount - Math.Max(RemainingBeforeThis, 0):N0} akan tercatat sebagai lebih bayar."
+            : null;
+    public bool HasDebtOverpayWarning => DebtOverpayWarning is not null;
+
+    partial void OnSelectedCategoryOptionChanged(CategoryPickerOption? value) => NotifyDebtHint();
+    partial void OnAmountTextChanged(string value) => NotifyDebtHint();
+    partial void OnSelectedTypeChanged(string value) => NotifyDebtHint();
+
+    private void NotifyDebtHint()
+    {
+        OnPropertyChanged(nameof(DebtHint));
+        OnPropertyChanged(nameof(HasDebtHint));
+        OnPropertyChanged(nameof(DebtOverpayWarning));
+        OnPropertyChanged(nameof(HasDebtOverpayWarning));
+    }
+
     [RelayCommand]
     private Task LoadAsync() => ExecuteSafelyAsync(async () =>
     {
@@ -83,6 +120,11 @@ public partial class TransactionFormViewModel(ILedgerRepository ledgerRepository
             Wallets.Add(wallet);
         }
 
+        var debts = (await domainRepository.GetDebtsAsync()).ToDictionary(debt => debt.Id);
+        debtsByCategoryId = categories
+            .Where(category => category.DebtId is { } debtId && debts.ContainsKey(debtId))
+            .ToDictionary(category => category.Id, category => debts[category.DebtId!.Value]);
+
         CategoryOptions.Clear();
         foreach (var category in categories)
         {
@@ -92,6 +134,10 @@ public partial class TransactionFormViewModel(ILedgerRepository ledgerRepository
             if (category.SavingName is { Length: > 0 } savingName)
             {
                 label += $" · Tabungan {savingName}";
+            }
+            if (category.DebtName is { Length: > 0 } debtName)
+            {
+                label += $" · Utang {debtName}";
             }
             CategoryOptions.Add(new CategoryPickerOption(category.Id, label));
         }
@@ -120,6 +166,7 @@ public partial class TransactionFormViewModel(ILedgerRepository ledgerRepository
         {
             OccurredAt = DateTime.Today < MinimumOccurredAt ? MinimumOccurredAt : DateTime.Today;
         }
+        NotifyDebtHint();
     });
 
     [RelayCommand]
@@ -197,7 +244,7 @@ public partial class TransactionFormViewModel(ILedgerRepository ledgerRepository
     {
         if (!IsEditMode) return;
         var confirmed = await feedback.ShowConfirmationAsync(
-            "Hapus transaksi", "Transaksi ini akan dihapus. Deposit tabungan terkait juga akan disesuaikan.", "Hapus", "Batal");
+            "Hapus transaksi", "Transaksi ini akan dihapus. Setoran tabungan atau pembayaran utang terkait juga akan disesuaikan.", "Hapus", "Batal");
         if (!confirmed) return;
         if (loadedTransaction is null)
         {

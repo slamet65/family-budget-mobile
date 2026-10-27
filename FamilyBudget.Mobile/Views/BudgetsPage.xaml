@@ -93,6 +93,12 @@
                                                     <Label Text="{Binding Budget.SavingName, StringFormat='Tabungan · {0}'}"
                                                            FontSize="10" TextColor="{StaticResource OnPrimaryContainer}" />
                                                 </Border>
+                                                <Border StrokeShape="RoundRectangle 8" Stroke="Transparent"
+                                                        BackgroundColor="{StaticResource PrimaryContainer}" Padding="7,2"
+                                                        IsVisible="{Binding HasDebt}" VerticalOptions="Center">
+                                                    <Label Text="{Binding Budget.DebtName, StringFormat='Utang · {0}'}"
+                                                           FontSize="10" TextColor="{StaticResource OnPrimaryContainer}" />
+                                                </Border>
                                             </HorizontalStackLayout>
                                             <Grid ColumnDefinitions="*,*,*">
                                                 <VerticalStackLayout Grid.Column="0" Spacing="1">

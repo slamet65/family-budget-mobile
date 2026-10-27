@@ -12,6 +12,7 @@
     <Compile Include="../FamilyBudget.Mobile/Services/Local/ILocalDatabase.cs" Link="Local/ILocalDatabase.cs" />
     <Compile Include="../FamilyBudget.Mobile/Services/Local/PendingTransactionInput.cs" Link="Local/PendingTransactionInput.cs" />
     <Compile Include="../FamilyBudget.Mobile/Services/Local/PendingSavingTransactionInput.cs" Link="Local/PendingSavingTransactionInput.cs" />
+    <Compile Include="../FamilyBudget.Mobile/Services/Local/PendingDebtTransactionInput.cs" Link="Local/PendingDebtTransactionInput.cs" />
     <Compile Include="../FamilyBudget.Mobile/Services/Local/DomainSnapshot.cs" Link="Local/DomainSnapshot.cs" />
     <Compile Include="../FamilyBudget.Mobile/Services/Local/SyncDiagnostics.cs" Link="Local/SyncDiagnostics.cs" />
     <Compile Include="../FamilyBudget.Mobile/Services/Local/Entities/*.cs" Link="Local/Entities/%(Filename)%(Extension)" />

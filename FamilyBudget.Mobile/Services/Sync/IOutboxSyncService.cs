@@ -10,6 +10,8 @@ public interface IOutboxSyncService
     Task EnqueueDeleteAsync(TransactionDto original);
     // Create-only: saving movements are immutable on the API (SAVING_TRANSACTION_IMMUTABLE).
     Task<SavingTransactionDto> EnqueueSavingAsync(PendingSavingTransactionInput input);
+    // Create-only as well (DEBT_TRANSACTION_IMMUTABLE).
+    Task<DebtTransactionDto> EnqueueDebtAsync(PendingDebtTransactionInput input);
     Task ProcessPendingAsync(CancellationToken ct = default);
     void TriggerSync();
     Task RetryAsync(string localId);

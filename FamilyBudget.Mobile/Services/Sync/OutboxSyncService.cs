@@ -57,6 +57,13 @@ public sealed class OutboxSyncService : IOutboxSyncService
         return transaction;
     }
 
+    public async Task<DebtTransactionDto> EnqueueDebtAsync(PendingDebtTransactionInput input)
+    {
+        var transaction = await database.EnqueueDebtTransactionAsync(GetUserId(), input);
+        TriggerSync();
+        return transaction;
+    }
+
     public void TriggerSync() => _ = ProcessPendingSafelyAsync();
 
     private async Task ProcessPendingSafelyAsync()
@@ -90,6 +97,12 @@ public sealed class OutboxSyncService : IOutboxSyncService
                         var savingTransaction = JsonSerializer.Deserialize<SavingTransactionDto>(item.PayloadJson)!;
                         var response = await SendSavingAsync(item, savingTransaction, ct);
                         await database.CompleteSavingOutboxAsync(item.OperationId, response);
+                    }
+                    else if (item.EntityType == "debt_transaction")
+                    {
+                        var debtTransaction = JsonSerializer.Deserialize<DebtTransactionDto>(item.PayloadJson)!;
+                        var response = await SendDebtAsync(item, debtTransaction, ct);
+                        await database.CompleteDebtOutboxAsync(item.OperationId, response);
                     }
                     else
                     {
@@ -182,6 +195,22 @@ public sealed class OutboxSyncService : IOutboxSyncService
             _ => throw new InvalidOperationException($"Unsupported saving outbox type: {transaction.Type}"),
         };
         return await api.CreateSavingTransactionAsync(transaction.SavingId, request, ct);
+    }
+
+    private async Task<DebtTransactionDto> SendDebtAsync(LocalOutboxItem item,
+        DebtTransactionDto transaction, CancellationToken ct)
+    {
+        object request = transaction.Type switch
+        {
+            "increase" => new CreateDebtIncreaseRequest(transaction.Amount, transaction.OccurredAt,
+                transaction.Note, item.OperationId),
+            "reduction" => new CreateDebtReductionRequest(transaction.Amount, transaction.OccurredAt,
+                transaction.Note, item.OperationId),
+            "saving_payment" => new CreateDebtSavingPaymentRequest(transaction.FromSavingId!.Value, transaction.Amount,
+                transaction.OccurredAt, transaction.Note, item.OperationId),
+            _ => throw new InvalidOperationException($"Unsupported debt outbox type: {transaction.Type}"),
+        };
+        return await api.CreateDebtTransactionAsync(transaction.DebtId, request, ct);
     }
 
     private int GetUserId() => auth.CurrentUser?.Id

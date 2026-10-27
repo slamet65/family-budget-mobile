@@ -33,6 +33,22 @@ public partial interface IApiClient
     // No update/delete: saving movements are immutable on the API (SAVING_TRANSACTION_IMMUTABLE).
     Task<SavingTransactionDto> CreateSavingTransactionAsync(int savingId, object request, CancellationToken ct = default);
 
+    Task<List<DebtDto>> GetDebtsAsync(CancellationToken ct = default);
+
+    Task<DebtDetailDto> GetDebtAsync(int id, CancellationToken ct = default);
+
+    Task<DebtDto> CreateDebtAsync(CreateDebtRequest request, CancellationToken ct = default);
+
+    Task<DebtDto> UpdateDebtAsync(int id, UpdateDebtRequest request, CancellationToken ct = default);
+
+    Task<List<DebtTransactionDto>> GetDebtTransactionsAsync(int debtId, CancellationToken ct = default);
+
+    Task<DebtTransactionDto> GetDebtTransactionAsync(int id, CancellationToken ct = default);
+
+    // Create-only: debt movements are immutable on the API (DEBT_TRANSACTION_IMMUTABLE).
+    // `payment` rows are never posted; they follow expenses in debt-mapped categories.
+    Task<DebtTransactionDto> CreateDebtTransactionAsync(int debtId, object request, CancellationToken ct = default);
+
     Task<List<PeriodDto>> GetPeriodsAsync(CancellationToken ct = default);
 
     Task<PeriodDto> CreatePeriodAsync(CreatePeriodRequest request, CancellationToken ct = default);

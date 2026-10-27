@@ -55,6 +55,10 @@ public sealed class FakeDomain : IDomainRepository
     public Task RefreshSavingsAsync(CancellationToken ct = default) { RefreshCount++; return Task.CompletedTask; }
     public Task RefreshSavingChangesAsync(IReadOnlyCollection<SyncChangeDto> changes, CancellationToken ct = default)
     { RefreshCount++; return Task.CompletedTask; }
+    public int DebtChangeRefreshCount { get; private set; }
+    public Task RefreshDebtsAsync(CancellationToken ct = default) { RefreshCount++; return Task.CompletedTask; }
+    public Task RefreshDebtChangesAsync(IReadOnlyCollection<SyncChangeDto> changes, CancellationToken ct = default)
+    { DebtChangeRefreshCount++; return Task.CompletedTask; }
     public Task RefreshBudgetsAsync(IReadOnlyCollection<int> periodIds, CancellationToken ct = default)
     { RefreshedBudgetPeriods.AddRange(periodIds); return Task.CompletedTask; }
     public Task RefreshUsersAsync(CancellationToken ct = default) { RefreshCount++; return Task.CompletedTask; }
@@ -62,6 +66,10 @@ public sealed class FakeDomain : IDomainRepository
     public Task<SavingDetailDto?> GetSavingAsync(int id) => Task.FromResult<SavingDetailDto?>(null);
     public Task<IReadOnlyList<SavingTransactionDto>> GetSavingTransactionsAsync(int id) => Task.FromResult<IReadOnlyList<SavingTransactionDto>>([]);
     public Task<SavingTransactionDto?> GetSavingTransactionAsync(int id) => Task.FromResult<SavingTransactionDto?>(null);
+    public Task<IReadOnlyList<DebtDto>> GetDebtsAsync() => Task.FromResult<IReadOnlyList<DebtDto>>([]);
+    public Task<DebtDetailDto?> GetDebtAsync(int id) => Task.FromResult<DebtDetailDto?>(null);
+    public Task<IReadOnlyList<DebtTransactionDto>> GetDebtTransactionsAsync(int id) => Task.FromResult<IReadOnlyList<DebtTransactionDto>>([]);
+    public Task<DebtTransactionDto?> GetDebtTransactionAsync(int id) => Task.FromResult<DebtTransactionDto?>(null);
     public Task<IReadOnlyList<BudgetDto>> GetBudgetsAsync(int id) => Task.FromResult<IReadOnlyList<BudgetDto>>([]);
     public Task<IReadOnlyList<UserDto>> GetUsersAsync() => Task.FromResult<IReadOnlyList<UserDto>>([]);
 }
@@ -72,6 +80,7 @@ public sealed class FakeOutbox : IOutboxSyncService
     public Task<TransactionDto> EnqueueUpdateAsync(TransactionDto original, PendingTransactionInput input) => throw new NotImplementedException();
     public Task EnqueueDeleteAsync(TransactionDto original) => throw new NotImplementedException();
     public Task<SavingTransactionDto> EnqueueSavingAsync(PendingSavingTransactionInput input) => throw new NotImplementedException();
+    public Task<DebtTransactionDto> EnqueueDebtAsync(PendingDebtTransactionInput input) => throw new NotImplementedException();
     public Task ProcessPendingAsync(CancellationToken ct = default) => Task.CompletedTask;
     public void TriggerSync() { }
     public Task RetryAsync(string id) => Task.CompletedTask;

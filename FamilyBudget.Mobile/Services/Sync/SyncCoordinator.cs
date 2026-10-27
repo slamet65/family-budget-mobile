@@ -117,7 +117,7 @@ public sealed class SyncCoordinator(IApiClient api, ILocalDatabase database, IAu
             }
         }
 
-        if (types.Overlaps(["categories", "savings"])) await references.RefreshCategoriesAsync(ct);
+        if (types.Overlaps(["categories", "savings", "debts"])) await references.RefreshCategoriesAsync(ct);
         if (types.Overlaps(["periods"])) await references.RefreshPeriodsAsync(ct);
         if (types.Overlaps(["wallets", "periods", "wallet_reconciliations"]))
             await ledger.RefreshAsync(ct);
@@ -142,6 +142,9 @@ public sealed class SyncCoordinator(IApiClient api, ILocalDatabase database, IAu
 
         if (types.Overlaps(["savings", "saving_transactions"]))
             await domain.RefreshSavingChangesAsync(changes, ct);
+        // An expense in a debt category produces a debt_transactions change of its own.
+        if (types.Overlaps(["debts", "debt_transactions"]))
+            await domain.RefreshDebtChangesAsync(changes, ct);
         if (affectedPeriodIds.Count > 0) await domain.RefreshBudgetsAsync(affectedPeriodIds, ct);
         if (types.Contains("users")) await domain.RefreshUsersAsync(ct);
     }

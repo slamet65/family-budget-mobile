@@ -384,7 +384,7 @@ var savingEntry = new SavingTransactionDto(Id: 8, SavingId: 7, Type: "opening_ba
     Note: "Opening", UserId: 1, OccurredAt: date, CreatedAt: date);
 var budget = new BudgetDto(9, 1, "September", 1, "Food", null, null, 1000, 250, 750, date);
 var member = new UserDto(2, "Partner", "partner@example.com");
-await database.ReplaceDomainSnapshotAsync(1, new([saving], [savingEntry], [budget], [member]));
+await database.ReplaceDomainSnapshotAsync(1, new([saving], [savingEntry], [budget], [member], [], []));
 Check((await database.GetSavingsAsync(1)).Single() == saving
     && (await database.GetSavingTransactionsAsync(1, 7)).Single() == savingEntry,
     "saving list/detail ledger round-trips through domain cache");
@@ -392,7 +392,7 @@ Check((await database.GetBudgetsAsync(1, 1)).Single() == budget
     && (await database.GetUsersAsync(1)).Single() == member,
     "budget and public family member snapshots round-trip locally");
 var historicalBudget = budget with { Id = 10, PeriodId = 2, PeriodName = "August" };
-await database.ReplaceDomainSnapshotAsync(1, new([saving], [savingEntry], [budget, historicalBudget], [member]));
+await database.ReplaceDomainSnapshotAsync(1, new([saving], [savingEntry], [budget, historicalBudget], [member], [], []));
 await database.ReplaceBudgetsAsync(1, [1], [budget with { PlannedAmount = 1_500 }]);
 Check((await database.GetBudgetsAsync(1, 1)).Single().PlannedAmount == 1_500
     && (await database.GetBudgetsAsync(1, 2)).Single() == historicalBudget,
@@ -415,7 +415,7 @@ var directExpense = new SavingTransactionDto(Id: 81, SavingId: 7, Type: "expense
 var targetedSavingPath = Path.Combine(Path.GetTempPath(), $"family-budget-targeted-saving-{Guid.NewGuid():N}.db3");
 var targetedSavingDatabase = new LocalDatabase(targetedSavingPath);
 await targetedSavingDatabase.ReplaceDomainSnapshotAsync(1,
-    new([saving, targetSaving], [savingEntry, directExpense], [], []));
+    new([saving, targetSaving], [savingEntry, directExpense], [], [], [], []));
 var requestedSavingIds = new List<int>();
 var targetedSavingApi = DispatchProxy.Create<IApiClient, ApiProxy>();
 ((ApiProxy)(object)targetedSavingApi).Handler = (method, args) => method.Name switch
@@ -441,7 +441,7 @@ Check(requestedSavingIds.SequenceEqual([7])
     "incremental saving sync refreshes only affected saving IDs and preserves unrelated savings");
 await savingMutationDatabase.ReplaceLedgerSnapshotAsync(1, [wallet], [period], []);
 await savingMutationDatabase.ReplaceDomainSnapshotAsync(1,
-    new([saving, targetSaving], [savingEntry, directExpense], [], []));
+    new([saving, targetSaving], [savingEntry, directExpense], [], [], [], []));
 var pendingDeposit = await savingMutationDatabase.EnqueueSavingTransactionAsync(1,
     new(7, "deposit", 200, 1, "Cash", null, null, null, null, "Offline deposit", date));
 Check((await savingMutationDatabase.GetSavingsAsync(1)).Single(item => item.Id == 7).Balance == 700
@@ -494,7 +494,7 @@ Check((await savingMutationDatabase.GetSavingTransactionAsync(1, 81)) is { SyncS
 var savingProcessorPath = Path.Combine(Path.GetTempPath(), $"family-budget-saving-processor-{Guid.NewGuid():N}.db3");
 var savingProcessorDatabase = new LocalDatabase(savingProcessorPath);
 await savingProcessorDatabase.ReplaceLedgerSnapshotAsync(1, [wallet], [period], []);
-await savingProcessorDatabase.ReplaceDomainSnapshotAsync(1, new([saving], [], [], []));
+await savingProcessorDatabase.ReplaceDomainSnapshotAsync(1, new([saving], [], [], [], [], []));
 var savingProcessorNetwork = new TestNetwork { IsInternetAvailable = false };
 CreateSavingDepositRequest? capturedSavingCreate = null;
 var savingApi = DispatchProxy.Create<IApiClient, ApiProxy>();
@@ -543,6 +543,122 @@ var legacyBudget = JsonSerializer.Deserialize<BudgetDto>(
 Check(fundedBudget?.FundedAmount == 3000 && legacyBudget?.FundedAmount == 0,
     "budget fundedAmount parses and defaults to zero for cached rows without it");
 
+// Debts share the domain cache and outbox with savings, but their remaining balance may go negative.
+var debtPath = Path.Combine(Path.GetTempPath(), $"family-budget-debt-{Guid.NewGuid():N}.db3");
+var debtDatabase = new LocalDatabase(debtPath);
+var debt = new DebtDto(20, "Motor", null, 1_000, date);
+var otherDebt = new DebtDto(21, "HP", null, 300, date);
+var debtOpening = new DebtTransactionDto(Id: 30, DebtId: 20, Type: "opening_balance", Amount: 1_000,
+    SourceTransactionId: null, SourceSavingTransactionId: null, SourceCategoryId: null, SourceCategoryName: null,
+    FromWalletId: null, FromWalletName: null, FromSavingId: null, FromSavingName: null,
+    Note: "Saldo awal", UserId: 1, OccurredAt: date, CreatedAt: date);
+var debtPayment = debtOpening with
+{
+    Id = 31, Type = "payment", Amount = 400, SourceTransactionId = 99, SourceCategoryId = 3,
+    SourceCategoryName = "Cicilan Motor", FromWalletId = 1, FromWalletName = "Cash", Note = null,
+};
+await debtDatabase.ReplaceDomainSnapshotAsync(1,
+    new([saving], [savingEntry], [], [], [debt with { Balance = 600 }, otherDebt], [debtOpening, debtPayment]));
+Check((await debtDatabase.GetDebtsAsync(1)).Single(item => item.Id == 20) == debt with { Balance = 600 }
+    && (await debtDatabase.GetDebtTransactionsAsync(1, 20)).Count == 2
+    && (await debtDatabase.GetDebtTransactionAsync(1, 31)) == debtPayment
+    && (await debtDatabase.GetSavingsAsync(1)).Single() == saving,
+    "debt list and history round-trip through the domain cache next to savings");
+Check((await debtDatabase.GetDebtsAsync(2)).Count == 0, "debt cache is isolated by signed-in account");
+
+var pendingIncrease = await debtDatabase.EnqueueDebtTransactionAsync(1, new(20, "increase", 50, null, null, "Bunga", date));
+var pendingSavingPayment = await debtDatabase.EnqueueDebtTransactionAsync(1,
+    new(20, "saving_payment", 200, 7, "Emergency", null, date));
+var pendingOverpay = await debtDatabase.EnqueueDebtTransactionAsync(1, new(21, "reduction", 500, null, null, "Diskon", date));
+var pendingDebts = await debtDatabase.GetDebtsAsync(1);
+Check(pendingDebts.Single(item => item.Id == 20).Balance == 450
+    && pendingDebts.Single(item => item.Id == 21) is { Balance: -200, IsOverpaid: true, StatusText: "Lebih bayar Rp 200" }
+    && (await debtDatabase.GetSavingsAsync(1)).Single().Balance == 300,
+    "offline debt movements update the remaining debt, may overpay, and a saving payment spends the saving");
+Check((await debtDatabase.GetDebtTransactionsAsync(1, 20)).Count == 4
+    && pendingIncrease is { SyncStatus: "pending", IsIncrease: true },
+    "pending debt movements show in the debt history");
+await debtDatabase.CancelOutboxAsync(1, pendingSavingPayment.LocalId!);
+Check((await debtDatabase.GetDebtsAsync(1)).Single(item => item.Id == 20).Balance == 650
+    && (await debtDatabase.GetSavingsAsync(1)).Single().Balance == 500
+    && (await debtDatabase.GetDebtTransactionsAsync(1, 20)).Count == 3,
+    "cancelling a queued saving payment restores both the debt and the saving");
+
+var debtRequests = new List<(int DebtId, object Request)>();
+var debtApi = DispatchProxy.Create<IApiClient, ApiProxy>();
+((ApiProxy)(object)debtApi).Handler = (method, args) => method.Name switch
+{
+    nameof(IApiClient.CreateDebtTransactionAsync) => CaptureDebtCreate((int)args![0]!, args[1]!),
+    _ => throw new NotImplementedException(method.Name),
+};
+Task<DebtTransactionDto> CaptureDebtCreate(int debtId, object request)
+{
+    debtRequests.Add((debtId, request));
+    var (type, amount, clientMutationId) = request switch
+    {
+        CreateDebtIncreaseRequest increase => (increase.Type, increase.Amount, increase.ClientMutationId),
+        CreateDebtReductionRequest reduction => (reduction.Type, reduction.Amount, reduction.ClientMutationId),
+        _ => throw new InvalidOperationException(request.GetType().Name),
+    };
+    return Task.FromResult(debtOpening with
+    {
+        Id = 40 + debtRequests.Count, DebtId = debtId, Type = type, Amount = amount, Note = null,
+        ClientMutationId = clientMutationId,
+    });
+}
+await new OutboxSyncService(debtDatabase, debtApi, auth, new TestNetwork { IsInternetAvailable = true }).ProcessPendingAsync();
+Check(debtRequests.Count == 2
+    && debtRequests[0] is (20, CreateDebtIncreaseRequest { ClientMutationId: var increaseId }) && increaseId == pendingIncrease.LocalId
+    && debtRequests[1] is (21, CreateDebtReductionRequest { ClientMutationId: var reductionId }) && reductionId == pendingOverpay.LocalId,
+    "debt outbox processor sends each create once with its stable idempotency id");
+Check((await debtDatabase.GetPendingOutboxAsync(1)).Count == 0
+    && (await debtDatabase.GetDebtTransactionAsync(1, 41)) is { SyncStatus: "synced", Type: "increase" }
+    && (await debtDatabase.GetDebtTransactionsAsync(1, 20)).Count == 3,
+    "a synced debt movement replaces its pending row without duplicating it");
+Check(JsonSerializer.Serialize(new CreateDebtSavingPaymentRequest(7, 100, date, null, "id"), JsonOptions.Default)
+        .Contains("\"type\":\"saving_payment\"")
+    && JsonSerializer.Serialize(new CreateDebtSavingPaymentRequest(7, 100, date, null, "id"), JsonOptions.Default)
+        .Contains("\"fromSavingId\":7"),
+    "debt saving payment request carries its type and source saving");
+
+// An edited expense can move its payment to another debt: both debts must refresh.
+var requestedDebtIds = new List<int>();
+var debtChangeApi = DispatchProxy.Create<IApiClient, ApiProxy>();
+((ApiProxy)(object)debtChangeApi).Handler = (method, args) => method.Name switch
+{
+    nameof(IApiClient.GetDebtTransactionAsync) => Task.FromResult(debtPayment with { DebtId = 21 }),
+    nameof(IApiClient.GetDebtAsync) => GetChangedDebt((int)args![0]!),
+    nameof(IApiClient.GetDebtTransactionsAsync) => Task.FromResult((int)args![0]! == 21
+        ? new List<DebtTransactionDto> { debtPayment with { DebtId = 21 } }
+        : new List<DebtTransactionDto> { debtOpening }),
+    _ => throw new NotImplementedException(method.Name),
+};
+Task<DebtDetailDto> GetChangedDebt(int id)
+{
+    requestedDebtIds.Add(id);
+    return Task.FromResult(id == 20
+        ? new DebtDetailDto(20, "Motor", null, 1_000, 1_000, date, date)
+        : new DebtDetailDto(21, "HP", null, -100, 0, null, date));
+}
+await new DomainRepository(debtDatabase, debtChangeApi, auth)
+    .RefreshDebtChangesAsync([new(1, "debt_transactions", 31, "upsert", date)]);
+Check(requestedDebtIds.Order().SequenceEqual([20, 21])
+    && (await debtDatabase.GetDebtTransactionsAsync(1, 21)).Any(item => item.Id == 31)
+    && (await debtDatabase.GetDebtTransactionsAsync(1, 20)).All(item => item.Id != 31)
+    && (await debtDatabase.GetDebtsAsync(1)).Single(item => item.Id == 21).Balance == -100,
+    "incremental debt sync refreshes both the old and the new debt of a moved payment");
+
+var updateCategoryJson = JsonSerializer.Serialize(new UpdateCategoryRequest("Cicilan", null, false, null, null), JsonOptions.Default);
+Check(updateCategoryJson.Contains("\"savingId\":null") && updateCategoryJson.Contains("\"debtId\":null")
+    && !JsonSerializer.Serialize(new CreateCategoryRequest("Cicilan", null, false), JsonOptions.Default).Contains("debtId"),
+    "category update always sends both mappings so they can be cleared; create omits empty ones");
+var debtCategory = JsonSerializer.Deserialize<CategoryDto>(
+    """{"id":3,"name":"Cicilan Motor","parentId":null,"isCatchAll":false,"savingId":null,"savingName":null,"debtId":20,"debtName":"Motor","createdAt":"2026-09-15T00:00:00Z"}""",
+    JsonOptions.Default);
+Check(debtCategory is { HasDebt: true, HasSaving: false, DebtName: "Motor" }, "category debt mapping parses");
+await debtDatabase.ReplaceCategoriesAsync(1, [debtCategory!]);
+Check((await debtDatabase.GetCategoriesAsync(1)).Single() == debtCategory, "category debt mapping round-trips locally");
+
 Check(await database.GetSyncCursorAsync(1) is null, "new account has no incremental cursor");
 await database.SetSyncCursorAsync(1, 1234);
 Check(await database.GetSyncCursorAsync(1) == 1234
@@ -556,9 +672,12 @@ var feedCursor = 10L;
 coordinatorProxy.Handler = (method, args) => method.Name switch
 {
     nameof(IApiClient.GetSyncBootstrapAsync) => Task.FromResult(new SyncBootstrapDto(10)),
-    nameof(IApiClient.GetSyncChangesAsync) => Task.FromResult(feedCursor == 10
-        ? new SyncChangesDto([], 10, false)
-        : new SyncChangesDto([new(11, "transactions", 1, "upsert", date)], 11, false)),
+    nameof(IApiClient.GetSyncChangesAsync) => Task.FromResult(feedCursor switch
+    {
+        10 => new SyncChangesDto([], 10, false),
+        11 => new SyncChangesDto([new(11, "transactions", 1, "upsert", date)], 11, false),
+        _ => new SyncChangesDto([new(12, "debt_transactions", 31, "upsert", date)], 12, false),
+    }),
     _ => throw new NotImplementedException(method.Name),
 };
 var coordinatorAuth = new TestAuth();
@@ -591,6 +710,10 @@ Check(await coordinatorDatabase.GetSyncCursorAsync(1) == 10
 var diagnostics = await coordinator.GetStatusAsync();
 Check(diagnostics is { Status: "synced", LastSuccessAt: not null, QueueDepth: 1, LastErrorCode: null },
     "sync diagnostics persist last success and queue depth without payload data");
+feedCursor = 12;
+await coordinator.SynchronizeAsync();
+Check(fakeDomain.DebtChangeRefreshCount == 1 && await coordinatorDatabase.GetSyncCursorAsync(1) == 12,
+    "a debt change in the feed triggers a targeted debt refresh");
 
 var legacyPath = Path.Combine(Path.GetTempPath(), $"family-budget-legacy-test-{Guid.NewGuid():N}.db3");
 using (var legacy = new SQLite.SQLiteConnection(legacyPath))

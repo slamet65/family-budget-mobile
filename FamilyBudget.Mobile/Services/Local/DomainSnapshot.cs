@@ -6,4 +6,6 @@ public sealed record DomainSnapshot(
     IReadOnlyCollection<SavingDto> Savings,
     IReadOnlyCollection<SavingTransactionDto> SavingTransactions,
     IReadOnlyCollection<BudgetDto> Budgets,
-    IReadOnlyCollection<UserDto> Users);
+    IReadOnlyCollection<UserDto> Users,
+    IReadOnlyCollection<DebtDto> Debts,
+    IReadOnlyCollection<DebtTransactionDto> DebtTransactions);

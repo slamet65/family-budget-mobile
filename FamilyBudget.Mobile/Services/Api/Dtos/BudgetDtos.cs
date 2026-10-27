@@ -16,7 +16,9 @@ public record BudgetDto(
     long ActualAmount,
     long RemainingAmount,
     DateTimeOffset CreatedAt,
-    long FundedAmount = 0);
+    long FundedAmount = 0,
+    int? DebtId = null,
+    string? DebtName = null);
 
 public record UpsertBudgetRequest(long PlannedAmount);
 

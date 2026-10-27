@@ -31,7 +31,17 @@
                         ItemDisplayBinding="{Binding Label}"
                         SelectedItem="{Binding SelectedSaving}"
                         IsEnabled="{Binding CanMapToSaving}" />
-                <Label Text="Kategori yang memiliki subkategori tidak dapat dihubungkan ke tabungan."
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Utang" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Picker ItemsSource="{Binding DebtOptions}"
+                        ItemDisplayBinding="{Binding Label}"
+                        SelectedItem="{Binding SelectedDebt}"
+                        IsEnabled="{Binding CanMapToSaving}" />
+                <Label Text="Setiap pengeluaran di kategori ini mengurangi sisa utang. Kategori hanya bisa dihubungkan ke tabungan atau utang."
+                       FontSize="11" TextColor="{StaticResource OnSurfaceVariant}" />
+                <Label Text="Kategori yang memiliki subkategori tidak dapat dihubungkan ke tabungan atau utang."
                        FontSize="12" TextColor="{StaticResource OnSurfaceVariant}"
                        IsVisible="{Binding HasChildren}" />
             </VerticalStackLayout>

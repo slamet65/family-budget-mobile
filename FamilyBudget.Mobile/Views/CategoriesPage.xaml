@@ -34,6 +34,8 @@
                         <Label Text="{Binding Name}" />
                         <Label Grid.Row="1" Text="{Binding SavingName, StringFormat='Tabungan: {0}'}"
                                FontSize="11" TextColor="{StaticResource Primary}" IsVisible="{Binding HasSaving}" />
+                        <Label Grid.Row="1" Text="{Binding DebtName, StringFormat='Utang: {0}'}"
+                               FontSize="11" TextColor="{StaticResource Primary}" IsVisible="{Binding HasDebt}" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

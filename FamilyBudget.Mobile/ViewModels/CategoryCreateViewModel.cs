@@ -15,9 +15,11 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDat
 {
     private static readonly ParentCategoryOption NoParent = new(null, "Tidak ada (kategori utama)");
     private static readonly SavingOption NoSaving = new(null, "Bukan kategori tabungan");
+    private static readonly DebtOption NoDebt = new(null, "Bukan kategori utang");
 
     public ObservableCollection<ParentCategoryOption> ParentOptions { get; } = [NoParent];
     public ObservableCollection<SavingOption> SavingOptions { get; } = [NoSaving];
+    public ObservableCollection<DebtOption> DebtOptions { get; } = [NoDebt];
 
     [ObservableProperty]
     private string? categoryIdRaw;
@@ -39,6 +41,11 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDat
     [ObservableProperty]
     private SavingOption selectedSaving = NoSaving;
 
+    // A leaf maps to a saving or a debt, never both (CATEGORY_MAPPING_CONFLICT):
+    // picking one resets the other.
+    [ObservableProperty]
+    private DebtOption selectedDebt = NoDebt;
+
     [ObservableProperty]
     private bool hasChildren;
 
@@ -58,7 +65,7 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDat
         ParentOptions.Clear();
         ParentOptions.Add(NoParent);
         foreach (var topLevel in categories
-                     .Where(c => c.ParentId is null && c.Id != current?.Id && c.SavingId is null)
+                     .Where(c => c.ParentId is null && c.Id != current?.Id && c.SavingId is null && c.DebtId is null)
                      .OrderBy(c => c.Name))
         {
             ParentOptions.Add(new ParentCategoryOption(topLevel.Id, topLevel.Name));
@@ -71,6 +78,13 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDat
             SavingOptions.Add(new SavingOption(saving.Id, saving.Name));
         }
 
+        DebtOptions.Clear();
+        DebtOptions.Add(NoDebt);
+        foreach (var debt in (await domain.GetDebtsAsync()).OrderBy(d => d.Name))
+        {
+            DebtOptions.Add(new DebtOption(debt.Id, debt.Name));
+        }
+
         if (current is not null)
         {
             Name = current.Name;
@@ -78,11 +92,13 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDat
             IsCatchAll = current.IsCatchAll;
             HasChildren = categories.Any(c => c.ParentId == current.Id);
             SelectedSaving = SavingOptions.FirstOrDefault(s => s.Id == current.SavingId) ?? NoSaving;
+            SelectedDebt = DebtOptions.FirstOrDefault(d => d.Id == current.DebtId) ?? NoDebt;
         }
         else
         {
             SelectedParent = NoParent;
             SelectedSaving = NoSaving;
+            SelectedDebt = NoDebt;
             HasChildren = false;
         }
 
@@ -99,8 +115,19 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDat
         if (value)
         {
             SelectedSaving = NoSaving;
+            SelectedDebt = NoDebt;
         }
         OnPropertyChanged(nameof(CanMapToSaving));
+    }
+
+    partial void OnSelectedSavingChanged(SavingOption value)
+    {
+        if (value?.Id is not null) SelectedDebt = NoDebt;
+    }
+
+    partial void OnSelectedDebtChanged(DebtOption value)
+    {
+        if (value?.Id is not null) SelectedSaving = NoSaving;
     }
 
     partial void OnHasChildrenChanged(bool value) => OnPropertyChanged(nameof(CanMapToSaving));
@@ -117,12 +144,14 @@ public partial class CategoryCreateViewModel(IApiClient apiClient, IReferenceDat
         if (IsEditMode)
         {
             await apiClient.UpdateCategoryAsync(int.Parse(CategoryIdRaw!),
-                new UpdateCategoryRequest(Name.Trim(), SelectedParent.Id, IsCatchAll, CanMapToSaving ? SelectedSaving.Id : null));
+                new UpdateCategoryRequest(Name.Trim(), SelectedParent.Id, IsCatchAll,
+                    CanMapToSaving ? SelectedSaving.Id : null,
+                    CanMapToSaving ? SelectedDebt.Id : null));
         }
         else
         {
             await apiClient.CreateCategoryAsync(
-                new CreateCategoryRequest(Name.Trim(), SelectedParent.Id, IsCatchAll, SelectedSaving.Id));
+                new CreateCategoryRequest(Name.Trim(), SelectedParent.Id, IsCatchAll, SelectedSaving.Id, SelectedDebt.Id));
         }
         await Shell.Current.GoToAsync("..");
     });

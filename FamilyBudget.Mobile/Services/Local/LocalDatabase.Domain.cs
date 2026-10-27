@@ -26,6 +26,8 @@ public sealed partial class LocalDatabase
         rows.AddRange(snapshot.SavingTransactions.Select(item => Row(userId, "saving_transaction", item.Id, item.SavingId, item)));
         rows.AddRange(snapshot.Budgets.Select(item => Row(userId, "budget", item.Id, item.PeriodId, item)));
         rows.AddRange(snapshot.Users.Select(item => Row(userId, "user", item.Id, null, item)));
+        rows.AddRange(snapshot.Debts.Select(item => Row(userId, "debt", item.Id, null, item)));
+        rows.AddRange(snapshot.DebtTransactions.Select(item => Row(userId, "debt_transaction", item.Id, item.DebtId, item)));
         var db = await GetConnectionAsync();
         await db.RunInTransactionAsync(connection =>
         {
@@ -76,6 +78,45 @@ public sealed partial class LocalDatabase
         });
     }
 
+    public async Task ReplaceDebtsSnapshotAsync(int userId, IReadOnlyCollection<DebtDto> debts,
+        IReadOnlyCollection<DebtTransactionDto> transactions)
+    {
+        var rows = debts.Select(item => Row(userId, "debt", item.Id, null, item))
+            .Concat(transactions.Select(item => Row(userId, "debt_transaction", item.Id, item.DebtId, item))).ToList();
+        var db = await GetConnectionAsync();
+        await db.RunInTransactionAsync(connection =>
+        {
+            var protectedKeys = connection.Query<LocalDomainEntity>(
+                    "SELECT * FROM domain_entities WHERE UserId=? AND EntityType='debt_transaction' AND SyncStatus IS NOT NULL AND SyncStatus != 'synced'", userId)
+                .Select(row => row.Key).ToHashSet(StringComparer.Ordinal);
+            connection.Execute("DELETE FROM domain_entities WHERE UserId=? AND EntityType='debt'", userId);
+            connection.Execute("DELETE FROM domain_entities WHERE UserId=? AND EntityType='debt_transaction' AND (SyncStatus IS NULL OR SyncStatus='synced')", userId);
+            connection.InsertAll(rows.Where(row => !protectedKeys.Contains(row.Key)));
+        });
+    }
+
+    public async Task ReplaceDebtsAsync(int userId, IReadOnlyCollection<int> debtIds,
+        IReadOnlyCollection<DebtDto> debts, IReadOnlyCollection<DebtTransactionDto> transactions)
+    {
+        if (debtIds.Count == 0) return;
+        var rows = debts.Select(item => Row(userId, "debt", item.Id, null, item))
+            .Concat(transactions.GroupBy(item => item.Id).Select(group => group.First())
+                .Select(item => Row(userId, "debt_transaction", item.Id, item.DebtId, item))).ToList();
+        var db = await GetConnectionAsync();
+        await db.RunInTransactionAsync(connection =>
+        {
+            var protectedKeys = connection.Query<LocalDomainEntity>(
+                    "SELECT * FROM domain_entities WHERE UserId=? AND EntityType='debt_transaction' AND SyncStatus IS NOT NULL AND SyncStatus != 'synced'", userId)
+                .Select(row => row.Key).ToHashSet(StringComparer.Ordinal);
+            foreach (var debtId in debtIds)
+            {
+                connection.Execute("DELETE FROM domain_entities WHERE UserId=? AND EntityType='debt' AND ServerId=?", userId, debtId);
+                connection.Execute("DELETE FROM domain_entities WHERE UserId=? AND EntityType='debt_transaction' AND GroupId=? AND (SyncStatus IS NULL OR SyncStatus='synced')", userId, debtId);
+            }
+            connection.InsertAll(rows.Where(row => !protectedKeys.Contains(row.Key)));
+        });
+    }
+
     public async Task ReplaceBudgetsAsync(int userId, IReadOnlyCollection<int> periodIds,
         IReadOnlyCollection<BudgetDto> budgets)
     {
@@ -121,8 +162,62 @@ public sealed partial class LocalDatabase
             if (operation.OperationType is "create" or "update")
                 ApplySavingEffect(result, JsonSerializer.Deserialize<SavingTransactionDto>(operation.PayloadJson)!, 1);
         }
+        // A queued debt payment from a saving spends that saving's money too.
+        foreach (var operation in PendingDebtCreates(operations))
+        {
+            var payment = JsonSerializer.Deserialize<DebtTransactionDto>(operation.PayloadJson)!;
+            if (payment.Type != "saving_payment" || payment.FromSavingId is not { } savingId) continue;
+            var index = result.FindIndex(item => item.Id == savingId);
+            if (index >= 0) result[index] = result[index] with { Balance = result[index].Balance - payment.Amount };
+        }
         return result;
     }
+
+    public async Task<IReadOnlyList<DebtDto>> GetDebtsAsync(int userId)
+    {
+        var result = (await Read<DebtDto>(userId, "debt", null)).ToList();
+        var db = await GetConnectionAsync();
+        var operations = await db.Table<LocalOutboxItem>().Where(row => row.UserId == userId).ToListAsync();
+        foreach (var operation in PendingDebtCreates(operations))
+        {
+            var transaction = JsonSerializer.Deserialize<DebtTransactionDto>(operation.PayloadJson)!;
+            var index = result.FindIndex(item => item.Id == transaction.DebtId);
+            if (index < 0) continue;
+            var change = transaction.IsIncrease ? transaction.Amount : -transaction.Amount;
+            result[index] = result[index] with { Balance = result[index].Balance + change };
+        }
+        return result;
+    }
+
+    public async Task<IReadOnlyList<DebtTransactionDto>> GetDebtTransactionsAsync(int userId, int debtId)
+    {
+        var db = await GetConnectionAsync();
+        var rows = await db.Table<LocalDomainEntity>().Where(row => row.UserId == userId
+            && row.EntityType == "debt_transaction" && row.GroupId == debtId && !row.IsDeleted).ToListAsync();
+        var result = rows.Select(row => JsonSerializer.Deserialize<DebtTransactionDto>(row.PayloadJson)! with
+        {
+            LocalId = row.LocalId, SyncStatus = row.SyncStatus ?? "synced", SyncError = row.SyncError,
+        }).ToList();
+        return result.GroupBy(item => item.ClientMutationId is null ? $"server:{item.Id}" : $"mutation:{item.ClientMutationId}")
+            .Select(group => group.OrderBy(item => item.IsSynced).First())
+            .OrderByDescending(item => item.OccurredAt).ThenByDescending(item => item.CreatedAt).ToList();
+    }
+
+    public async Task<DebtTransactionDto?> GetDebtTransactionAsync(int userId, int serverId)
+    {
+        var db = await GetConnectionAsync();
+        var row = await db.Table<LocalDomainEntity>().Where(item => item.UserId == userId
+            && item.EntityType == "debt_transaction" && item.ServerId == serverId && !item.IsDeleted).FirstOrDefaultAsync();
+        return row is null ? null : JsonSerializer.Deserialize<DebtTransactionDto>(row.PayloadJson)! with
+        {
+            LocalId = row.LocalId, SyncStatus = row.SyncStatus ?? "synced", SyncError = row.SyncError,
+        };
+    }
+
+    // Debt movements are create-only; a failed item no longer counts until it is retried.
+    private static IEnumerable<LocalOutboxItem> PendingDebtCreates(IEnumerable<LocalOutboxItem> operations) =>
+        operations.Where(row => row.EntityType == "debt_transaction" && row.OperationType == "create"
+            && row.Status is "pending" or "syncing" or "retry");
 
     public async Task<IReadOnlyList<SavingTransactionDto>> GetSavingTransactionsAsync(int userId, int savingId)
     {

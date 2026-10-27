@@ -31,6 +31,10 @@
         <ShellContent ContentTemplate="{DataTemplate views:SavingsPage}" />
     </FlyoutItem>
 
+    <FlyoutItem Title="Utang" Route="debts">
+        <ShellContent ContentTemplate="{DataTemplate views:DebtsPage}" />
+    </FlyoutItem>
+
     <FlyoutItem Title="Anggaran" Route="budgets">
         <ShellContent ContentTemplate="{DataTemplate views:BudgetsPage}" />
     </FlyoutItem>

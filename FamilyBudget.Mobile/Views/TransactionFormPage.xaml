@@ -68,6 +68,7 @@
                 <Picker ItemsSource="{Binding Wallets}" ItemDisplayBinding="{Binding Name}" SelectedItem="{Binding FromWallet}" />
                 <Label Text="Kategori" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" Margin="0,8,0,0" />
                 <Picker ItemsSource="{Binding CategoryOptions}" ItemDisplayBinding="{Binding Label}" SelectedItem="{Binding SelectedCategoryOption}" />
+                <Label Text="{Binding DebtHint}" IsVisible="{Binding HasDebtHint}" FontSize="12" TextColor="{StaticResource OnSurfaceVariant}" />
             </VerticalStackLayout>
 
             <!-- Transfer: from + to wallet -->
@@ -85,6 +86,7 @@
                        Placeholder="0">
                     <Entry.Behaviors><behaviors:ThousandsSeparatorBehavior /></Entry.Behaviors>
                 </Entry>
+                <Label Text="{Binding DebtOverpayWarning}" IsVisible="{Binding HasDebtOverpayWarning}" FontSize="12" TextColor="{StaticResource Error}" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4">

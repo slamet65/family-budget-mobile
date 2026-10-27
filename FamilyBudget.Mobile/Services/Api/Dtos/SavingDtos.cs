@@ -9,10 +9,11 @@ public record SavingDto(
 {
     public string Initials => GetInitials(Name);
 
-    private static string GetInitials(string name)
+    // Also used for debt cards, with their own fallback.
+    internal static string GetInitials(string name, string fallback = "TB")
     {
         var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (words.Length == 0) return "TB";
+        if (words.Length == 0) return fallback;
         if (words.Length == 1)
         {
             return words[0][..Math.Min(2, words[0].Length)].ToUpperInvariant();
@@ -69,7 +70,10 @@ public record SavingTransactionDto(
     // Set on a withdrawal spent on a budget category, or a deposit returning that money.
     // Unlike SourceCategoryName, it doesn't make the row read-only.
     int? FundedCategoryId = null,
-    string? FundedCategoryName = null)
+    string? FundedCategoryName = null,
+    // Set on an expense that paid off a debt (debt `saving_payment`).
+    int? RelatedDebtId = null,
+    string? RelatedDebtName = null)
 {
     public bool IsSynced => SyncStatus == "synced";
     public string SyncStatusText => SyncStatus switch
@@ -92,9 +96,10 @@ public record SavingTransactionDto(
         "withdrawal" => $"Tarik ke {ToWalletName ?? "dompet"}",
         "transfer_in" => $"Transfer dari {RelatedSavingName ?? "tabungan"}",
         "transfer_out" => $"Transfer ke {RelatedSavingName ?? "tabungan"}",
+        "expense" when RelatedDebtName is not null => $"Bayar utang {RelatedDebtName}",
         _ => string.IsNullOrWhiteSpace(Note) ? "Pengeluaran langsung" : Note,
     };
-    public string Detail => string.IsNullOrWhiteSpace(Note) || Type == "expense" ? string.Empty : Note;
+    public string Detail => string.IsNullOrWhiteSpace(Note) || (Type == "expense" && RelatedDebtName is null) ? string.Empty : Note;
     public string AmountText => $"{(IsOutgoing ? "−" : "+")} Rp {Amount:N0}";
 }
 

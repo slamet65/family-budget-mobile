@@ -120,10 +120,10 @@ public sealed partial class LocalDatabase
                 DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), operationId);
             var item = connection.Find<LocalOutboxItem>(operationId);
             if (item is null) return;
-            if (item.EntityType == "saving_transaction")
+            if (IsDomainOutbox(item))
             {
                 connection.Execute("UPDATE domain_entities SET SyncStatus='syncing', SyncError=NULL WHERE Key=?", item.EntityLocalId);
-                RefreshSavingPayload(connection, item.EntityLocalId, "syncing", null);
+                RefreshDomainPayload(connection, item, "syncing", null);
                 return;
             }
             connection.Execute("UPDATE transactions SET SyncStatus='syncing', SyncError=NULL WHERE Key=?", item.EntityLocalId);
@@ -188,12 +188,12 @@ public sealed partial class LocalDatabase
                 status, error, null, operationId);
             var item = connection.Find<LocalOutboxItem>(operationId);
             if (item is null) return;
-            if (item.EntityType == "saving_transaction")
+            if (IsDomainOutbox(item))
             {
                 connection.Execute("UPDATE domain_entities SET SyncStatus=?, SyncError=?, IsDeleted=? WHERE Key=?",
                     status, error, permanent && item.OperationType == "delete" ? 0 : item.OperationType == "delete" ? 1 : 0,
                     item.EntityLocalId);
-                RefreshSavingPayload(connection, item.EntityLocalId, status, error);
+                RefreshDomainPayload(connection, item, status, error);
                 return;
             }
             connection.Execute("UPDATE transactions SET SyncStatus=?, SyncError=?, IsDeleted=? WHERE Key=?",
@@ -211,11 +211,11 @@ public sealed partial class LocalDatabase
             var item = connection.Find<LocalOutboxItem>(localId);
             if (item is null || item.UserId != userId) return;
             connection.Execute("UPDATE outbox SET Status='pending', LastError=NULL, NextAttemptAtUnixMilliseconds=NULL WHERE OperationId=?", item.OperationId);
-            if (item.EntityType == "saving_transaction")
+            if (IsDomainOutbox(item))
             {
                 connection.Execute("UPDATE domain_entities SET SyncStatus='pending', SyncError=NULL, IsDeleted=? WHERE Key=?",
                     item.OperationType == "delete" ? 1 : 0, item.EntityLocalId);
-                RefreshSavingPayload(connection, item.EntityLocalId, "pending", null);
+                RefreshDomainPayload(connection, item, "pending", null);
                 return;
             }
             connection.Execute("UPDATE transactions SET SyncStatus='pending', SyncError=NULL, IsDeleted=? WHERE Key=?",
@@ -231,8 +231,9 @@ public sealed partial class LocalDatabase
         {
             var item = connection.Find<LocalOutboxItem>(localId);
             if (item is null || item.UserId != userId) return;
-            if (item.EntityType == "saving_transaction")
+            if (IsDomainOutbox(item))
             {
+                // Debt items are always creates; only legacy saving items restore a previous row.
                 var domain = connection.Find<LocalDomainEntity>(item.EntityLocalId);
                 if (item.OperationType == "create")
                 {
@@ -294,15 +295,22 @@ public sealed partial class LocalDatabase
         connection.Update(row);
     }
 
-    private static void RefreshSavingPayload(SQLite.SQLiteConnection connection, string key, string status, string? error)
+    private static bool IsDomainOutbox(LocalOutboxItem item) =>
+        item.EntityType is "saving_transaction" or "debt_transaction";
+
+    private static void RefreshDomainPayload(SQLite.SQLiteConnection connection, LocalOutboxItem item, string status, string? error)
     {
-        var row = connection.Find<LocalDomainEntity>(key);
+        var row = connection.Find<LocalDomainEntity>(item.EntityLocalId);
         if (row is null) return;
-        var transaction = JsonSerializer.Deserialize<SavingTransactionDto>(row.PayloadJson)! with
-        {
-            LocalId = row.LocalId, SyncStatus = status, SyncError = error,
-        };
-        row.PayloadJson = JsonSerializer.Serialize(transaction);
+        row.PayloadJson = item.EntityType == "debt_transaction"
+            ? JsonSerializer.Serialize(JsonSerializer.Deserialize<DebtTransactionDto>(row.PayloadJson)! with
+            {
+                LocalId = row.LocalId, SyncStatus = status, SyncError = error,
+            })
+            : JsonSerializer.Serialize(JsonSerializer.Deserialize<SavingTransactionDto>(row.PayloadJson)! with
+            {
+                LocalId = row.LocalId, SyncStatus = status, SyncError = error,
+            });
         connection.Update(row);
     }
 

@@ -28,6 +28,9 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("savingForm", typeof(SavingFormPage));
         Routing.RegisterRoute("savingDetail", typeof(SavingDetailPage));
         Routing.RegisterRoute("savingExpenseForm", typeof(SavingExpenseFormPage));
+        Routing.RegisterRoute("debtForm", typeof(DebtFormPage));
+        Routing.RegisterRoute("debtDetail", typeof(DebtDetailPage));
+        Routing.RegisterRoute("debtTransactionForm", typeof(DebtTransactionFormPage));
         Routing.RegisterRoute("periodCreate", typeof(PeriodCreatePage));
         Routing.RegisterRoute("addUser", typeof(AddUserPage));
         Routing.RegisterRoute("resetPassword", typeof(ResetPasswordPage));
