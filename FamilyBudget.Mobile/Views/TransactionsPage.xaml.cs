@@ -1,3 +1,4 @@
+using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.ViewModels;
 
@@ -11,6 +12,7 @@ public partial class TransactionsPage : ContentPage
     {
         InitializeComponent();
         BindingContext = this.viewModel = viewModel;
+        DesktopToolbar.AddRefresh(this, viewModel.LoadCommand);
     }
 
     protected override void OnAppearing()
@@ -29,7 +31,8 @@ public partial class TransactionsPage : ContentPage
 
     private async void OnCancelPendingInvoked(object? sender, EventArgs e)
     {
-        if (sender is SwipeItem { CommandParameter: TransactionDto transaction })
+        // SwipeItem (touch) and MenuFlyoutItem (right-click on desktop) are both MenuItems.
+        if (sender is MenuItem { CommandParameter: TransactionDto transaction })
             await viewModel.CancelPendingAsync(transaction);
     }
 }

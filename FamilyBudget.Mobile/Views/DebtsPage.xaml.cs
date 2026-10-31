@@ -1,3 +1,4 @@
+using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 using FamilyBudget.Mobile.ViewModels;
 
@@ -10,6 +11,7 @@ public partial class DebtsPage : ContentPage
     {
         InitializeComponent();
         BindingContext = this.viewModel = viewModel;
+        DesktopToolbar.AddRefresh(this, viewModel.LoadCommand);
     }
 
     protected override void OnAppearing()

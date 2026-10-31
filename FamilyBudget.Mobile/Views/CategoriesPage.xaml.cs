@@ -1,3 +1,4 @@
+using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels;
 using FamilyBudget.Mobile.Services.Api.Dtos;
 
@@ -11,6 +12,7 @@ public partial class CategoriesPage : ContentPage
     {
         InitializeComponent();
         BindingContext = this.viewModel = viewModel;
+        DesktopToolbar.AddRefresh(this, viewModel.LoadCommand);
     }
 
     protected override void OnAppearing()

@@ -65,6 +65,13 @@
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer Tapped="OnTransactionTapped" CommandParameter="{Binding .}" />
                                         </Border.GestureRecognizers>
+                                        <FlyoutBase.ContextFlyout>
+                                            <MenuFlyout>
+                                                <MenuFlyoutItem Text="Batalkan lokal"
+                                                                CommandParameter="{Binding .}"
+                                                                Clicked="OnCancelPendingInvoked" />
+                                            </MenuFlyout>
+                                        </FlyoutBase.ContextFlyout>
                                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="13">
                                             <Border Grid.Column="0"
                                                     WidthRequest="42" HeightRequest="42"

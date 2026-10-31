@@ -1,3 +1,4 @@
+using FamilyBudget.Mobile.Common;
 using FamilyBudget.Mobile.ViewModels;
 
 namespace FamilyBudget.Mobile.Views;
@@ -10,6 +11,7 @@ public partial class BudgetsPage : ContentPage
     {
         InitializeComponent();
         BindingContext = this.viewModel = viewModel;
+        DesktopToolbar.AddRefresh(this, viewModel.LoadCommand);
     }
 
     protected override void OnAppearing()
